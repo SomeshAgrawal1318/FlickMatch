@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "940735220354",
+    "project_id": "flickmatch-b9782",
+    "storage_bucket": "flickmatch-b9782.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:940735220354:android:2e1f3fa794a39ef70e029b",
+        "android_client_info": {
+          "package_name": "com.flickmatch.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOHCycmc_y52dWCTrdeljuLMxxUpUCwpk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
