@@ -1,6 +1,8 @@
 package com.flickmatch.app;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Button;
@@ -116,6 +118,8 @@ public class CreateRoomActivity extends AppCompatActivity {
             CheckBox cb = new CheckBox(this);
             cb.setText(genre);
             cb.setTextSize(13f);
+            cb.setTextColor(Color.parseColor("#E8E8E8"));
+            cb.setButtonTintList(ColorStateList.valueOf(Color.parseColor("#E07848")));
 
             // give each cell equal weight across the 3-column grid //
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
