@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_card"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <!-- Room name -->
+    <TextView
+        android:id="@+id/textRoomName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#F0F0F0"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <!-- Member count + invite code row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textMemberCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="#717171"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/textInviteCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_invite_code"
+            android:paddingStart="10dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="3dp"
+            android:textColor="#E07848"
+            android:textSize="11sp"
+            android:typeface="monospace" />
+    </LinearLayout>
+
+</LinearLayout>
