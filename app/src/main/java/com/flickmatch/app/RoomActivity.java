@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
@@ -633,7 +634,7 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void showMatchDialog(String movieTitle) {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this, R.style.CustomAlertDialog)
                 .setTitle("🎬 It's a Match!")
                 .setMessage("Everyone liked \"" + movieTitle + "\"!\nCheck the Watchlist.")
                 .setPositiveButton("View Watchlist", (d, w) -> showSection(2))

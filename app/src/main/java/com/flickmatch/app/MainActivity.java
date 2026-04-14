@@ -18,6 +18,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -251,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
         container.setPadding(px, px, px, 0);
         container.addView(codeInput);
 
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this, R.style.CustomAlertDialog)
                 .setTitle("Join a Room")
                 .setMessage("Enter the 6-character invite code:")
                 .setView(container)
