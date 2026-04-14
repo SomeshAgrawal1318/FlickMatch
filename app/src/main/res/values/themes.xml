@@ -21,15 +21,27 @@
 
     <!-- Custom AlertDialog Theme -->
     <style name="CustomAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <!-- Dialog Background -->
+
+        <!-- Dark dialog background -->
         <item name="android:background">#1E1E21</item>
+        <item name="android:backgroundTint">#1E1E21</item>
 
         <!-- Button accent color -->
         <item name="colorPrimary">#E07848</item>
 
-        <!-- Apply custom text styles -->
+        <!-- Title & Message -->
         <item name="materialAlertDialogTitleTextStyle">@style/DialogTitleStyle</item>
         <item name="materialAlertDialogBodyTextStyle">@style/DialogMessageStyle</item>
+
+        <!-- FIX FOR EDITTEXT TEXT COLOR -->
+        <item name="android:textColorPrimary">#E8E8E8</item>
+        <item name="android:editTextColor">#E8E8E8</item>
+        <item name="colorControlNormal">#E07848</item>           <!-- cursor & underline -->
+        <item name="colorOnSurface">#E8E8E8</item>
+        <item name="colorOnSurfaceVariant">#E07848</item>
+
+        <!-- Hint color (slightly dimmer) -->
+        <item name="android:textColorHint">#888888</item>
     </style>
 
 </resources>

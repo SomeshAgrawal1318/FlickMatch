@@ -2,6 +2,7 @@ package com.flickmatch.app;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -245,6 +246,10 @@ public class MainActivity extends AppCompatActivity {
         codeInput.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
         codeInput.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(Constants.INVITE_CODE_LENGTH) });
+
+        // forcing light text colour in EditText //
+        codeInput.setTextColor(Color.parseColor("#E8E8E8"));
+        codeInput.setHintTextColor(Color.parseColor("#1E1E21"));
 
         // wrap in a LinearLayout to apply padding as AlertDialog doesn't pad views automatically //
         LinearLayout container = new LinearLayout(this);
