@@ -2,16 +2,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A"
+    android:background="#141416"
     android:orientation="vertical">
 
-    <!-- =====================================================================
-         TAB BAR — pill-style, dark background
-    ====================================================================== -->
+    <!-- TAB BAR -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="52dp"
-        android:background="#111111"
+        android:background="#1E1E21"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="12dp"
@@ -27,7 +25,7 @@
             android:gravity="center"
             android:text="Lobby"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
 
         <TextView
@@ -40,8 +38,8 @@
             android:background="@drawable/bg_tab_inactive"
             android:gravity="center"
             android:text="Swipe"
-            android:textColor="#666666"
-            android:textSize="13sp" />
+            android:textColor="#717171"
+            android:textSize="11sp" />
 
         <TextView
             android:id="@+id/tabWatchlist"
@@ -52,21 +50,17 @@
             android:background="@drawable/bg_tab_inactive"
             android:gravity="center"
             android:text="Watchlist"
-            android:textColor="#666666"
-            android:textSize="13sp" />
+            android:textColor="#717171"
+            android:textSize="11sp" />
     </LinearLayout>
 
-    <!-- =====================================================================
-         CONTENT
-    ====================================================================== -->
+    <!-- CONTENT -->
     <ViewFlipper
         android:id="@+id/viewFlipper"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- =================================================================
-             SECTION 0: LOBBY
-        ================================================================= -->
+        <!-- SECTION 0: LOBBY -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -81,8 +75,8 @@
                     android:id="@+id/textRoomTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF"
-                    android:textSize="24sp"
+                    android:textColor="#F5F5F5"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <!-- Invite code card -->
@@ -97,11 +91,11 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="INVITE CODE"
-                        android:textColor="#666666"
-                        android:textSize="10sp"
+                        android:text="ROOM CODE"
+                        android:textColor="#717171"
+                        android:textSize="9sp"
                         android:textStyle="bold"
-                        android:letterSpacing="0.15" />
+                        android:letterSpacing="0.08" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -118,12 +112,12 @@
                             android:background="@drawable/bg_invite_code"
                             android:gravity="center"
                             android:padding="12dp"
-                            android:textColor="#E50914"
-                            android:textSize="28sp"
+                            android:textColor="#E07848"
+                            android:textSize="24sp"
                             android:textStyle="bold"
                             android:typeface="monospace" />
 
-                        <Button
+                        <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/buttonCopyCode"
                             android:layout_width="wrap_content"
                             android:layout_height="48dp"
@@ -133,7 +127,7 @@
                             android:paddingEnd="18dp"
                             android:text="Copy"
                             android:textColor="#FFFFFF"
-                            android:textSize="13sp"
+                            android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -141,9 +135,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="Share this code with friends to join!"
-                        android:textColor="#555555"
-                        android:textSize="12sp" />
+                        android:text="Share this code with friends to join"
+                        android:textColor="#717171"
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <!-- Members card -->
@@ -159,10 +153,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="MEMBERS"
-                        android:textColor="#666666"
-                        android:textSize="10sp"
+                        android:textColor="#717171"
+                        android:textSize="9sp"
                         android:textStyle="bold"
-                        android:letterSpacing="0.15" />
+                        android:letterSpacing="0.08" />
 
                     <LinearLayout
                         android:id="@+id/layoutMembers"
@@ -172,22 +166,20 @@
                         android:orientation="vertical" />
                 </LinearLayout>
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/buttonStartSwiping"
                     android:layout_width="match_parent"
-                    android:layout_height="54dp"
+                    android:layout_height="52dp"
                     android:layout_marginTop="24dp"
                     android:background="@drawable/bg_button_primary"
-                    android:text="▶  Start Swiping"
+                    android:text="Start Swiping"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </ScrollView>
 
-        <!-- =================================================================
-             SECTION 1: SWIPE
-        ================================================================= -->
+        <!-- SECTION 1: SWIPE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -197,7 +189,7 @@
             android:paddingTop="12dp"
             android:paddingBottom="16dp">
 
-            <!-- Movie card — rounded, clips the poster image -->
+            <!-- Movie card -->
             <FrameLayout
                 android:id="@+id/movieCard"
                 android:layout_width="match_parent"
@@ -214,7 +206,6 @@
                     android:contentDescription="Movie poster"
                     android:scaleType="centerCrop" />
 
-                <!-- Gradient so text is readable over the poster -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -232,8 +223,8 @@
                         android:id="@+id/textMovieTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="#FFFFFF"
-                        android:textSize="22sp"
+                        android:textColor="#F5F5F5"
+                        android:textSize="20sp"
                         android:textStyle="bold"
                         android:shadowColor="#AA000000"
                         android:shadowDx="1"
@@ -251,23 +242,23 @@
                             android:id="@+id/textMovieYear"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textColor="#CCCCCC"
-                            android:textSize="13sp" />
+                            android:textColor="#E8E8E8"
+                            android:textSize="11sp" />
 
                         <View
                             android:layout_width="4dp"
                             android:layout_height="4dp"
                             android:layout_marginStart="8dp"
                             android:layout_marginEnd="8dp"
-                            android:background="#888888"
+                            android:background="#717171"
                             android:layout_gravity="center_vertical" />
 
                         <TextView
                             android:id="@+id/textMovieRating"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textColor="#FFD700"
-                            android:textSize="13sp"
+                            android:textColor="#F5C518"
+                            android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -278,8 +269,8 @@
                         android:layout_marginTop="8dp"
                         android:ellipsize="end"
                         android:maxLines="3"
-                        android:textColor="#DDDDDD"
-                        android:textSize="13sp"
+                        android:textColor="#E8E8E8"
+                        android:textSize="11sp"
                         android:lineSpacingMultiplier="1.3" />
                 </LinearLayout>
             </FrameLayout>
@@ -294,7 +285,7 @@
                 android:text="No more movies!\nAdjust filters or check back later."
                 android:textAlignment="center"
                 android:textColor="#444444"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:visibility="gone" />
 
             <!-- Nope / Like -->
@@ -306,35 +297,33 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/buttonNope"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="52dp"
                     android:layout_marginEnd="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_button_nope"
                     android:text="✕  Nope"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textColor="#E07848"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/buttonLike"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="52dp"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_button_like"
-                    android:text="♥  Like"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:text="♡  Like"
+                    android:textColor="#E8E8E8"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- =================================================================
-             SECTION 2: WATCHLIST
-        ================================================================= -->
+        <!-- SECTION 2: WATCHLIST -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -356,10 +345,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="Sort"
-                    android:textColor="#666666"
-                    android:textSize="12sp"
+                    android:textColor="#717171"
+                    android:textSize="11sp"
                     android:textStyle="bold"
-                    android:letterSpacing="0.08" />
+                    android:letterSpacing="0.06" />
 
                 <TextView
                     android:id="@+id/sortMatchOrder"
@@ -371,8 +360,8 @@
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
                     android:text="Match Order"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp"
+                    android:textColor="#E8E8E8"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -385,8 +374,8 @@
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
                     android:text="Rating"
-                    android:textColor="#777777"
-                    android:textSize="12sp" />
+                    android:textColor="#717171"
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/sortPopularity"
@@ -397,8 +386,8 @@
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
                     android:text="Popular"
-                    android:textColor="#777777"
-                    android:textSize="12sp" />
+                    android:textColor="#717171"
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <!-- Empty state -->
@@ -411,7 +400,7 @@
                 android:text="No matches yet.\nKeep swiping!"
                 android:textAlignment="center"
                 android:textColor="#444444"
-                android:textSize="15sp"
+                android:textSize="13sp"
                 android:visibility="gone" />
 
             <TextView
@@ -421,10 +410,10 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="6dp"
                 android:text="MATCHES"
-                android:textColor="#AAAAAA"
-                android:textSize="10sp"
+                android:textColor="#717171"
+                android:textSize="9sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.12"
+                android:letterSpacing="0.08"
                 android:visibility="gone" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -440,10 +429,10 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="6dp"
                 android:text="WATCHED"
-                android:textColor="#555555"
-                android:textSize="10sp"
+                android:textColor="#717171"
+                android:textSize="9sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.12"
+                android:letterSpacing="0.08"
                 android:visibility="gone" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -452,7 +441,5 @@
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
         </LinearLayout>
-
     </ViewFlipper>
-
 </LinearLayout>

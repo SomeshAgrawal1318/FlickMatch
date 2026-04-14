@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A">
+    android:background="#141416">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -10,17 +10,15 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- ================================================================
-             ROOM NAME
-        ================================================================ -->
+        <!-- ROOM NAME -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Room name"
-            android:textColor="#AAAAAA"
-            android:textSize="11sp"
+            android:textColor="#E07848"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:letterSpacing="0.12" />
+            android:letterSpacing="0.06" />
 
         <EditText
             android:id="@+id/editRoomName"
@@ -34,12 +32,10 @@
             android:maxLength="50"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp" />
+            android:textColor="#F0F0F0"
+            android:textSize="13sp" />
 
-        <!-- ================================================================
-             GENRES
-        ================================================================ -->
+        <!-- GENRES -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -50,7 +46,7 @@
             <View
                 android:layout_width="3dp"
                 android:layout_height="18dp"
-                android:background="#E50914"
+                android:background="#E07848"
                 android:layout_marginEnd="10dp" />
 
             <TextView
@@ -58,15 +54,15 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Genres"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textColor="#F5F5F5"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Pick at least one"
-                android:textColor="#666666"
+                android:textColor="#717171"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -78,9 +74,7 @@
             android:columnCount="3"
             android:rowCount="6" />
 
-        <!-- ================================================================
-             MAX RUNTIME
-        ================================================================ -->
+        <!-- MAX RUNTIME -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -91,7 +85,7 @@
             <View
                 android:layout_width="3dp"
                 android:layout_height="18dp"
-                android:background="#E50914"
+                android:background="#E07848"
                 android:layout_marginEnd="10dp" />
 
             <TextView
@@ -99,8 +93,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Max runtime"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textColor="#F5F5F5"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -109,8 +103,8 @@
                 android:layout_height="wrap_content"
                 android:gravity="end"
                 android:text="240 min"
-                android:textColor="#E50914"
-                android:textSize="14sp"
+                android:textColor="#E07848"
+                android:textSize="13sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -121,12 +115,10 @@
             android:layout_marginTop="12dp"
             android:max="180"
             android:progress="180"
-            android:progressTint="#E50914"
-            android:thumbTint="#E50914" />
+            android:progressTint="#E07848"
+            android:thumbTint="#E07848" />
 
-        <!-- ================================================================
-             AGE RATINGS
-        ================================================================ -->
+        <!-- AGE RATINGS -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -137,15 +129,15 @@
             <View
                 android:layout_width="3dp"
                 android:layout_height="18dp"
-                android:background="#E50914"
+                android:background="#E07848"
                 android:layout_marginEnd="10dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Age ratings"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textColor="#F5F5F5"
+                android:textSize="13sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -160,48 +152,46 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
-                android:buttonTint="#E50914"
+                android:buttonTint="#E07848"
                 android:checked="true"
                 android:text="G"
-                android:textColor="#CCCCCC"
-                android:textSize="14sp" />
+                android:textColor="#E8E8E8"
+                android:textSize="13sp" />
 
             <CheckBox
                 android:id="@+id/cbRatingPG"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
-                android:buttonTint="#E50914"
+                android:buttonTint="#E07848"
                 android:checked="true"
                 android:text="PG"
-                android:textColor="#CCCCCC"
-                android:textSize="14sp" />
+                android:textColor="#E8E8E8"
+                android:textSize="13sp" />
 
             <CheckBox
                 android:id="@+id/cbRatingPG13"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
-                android:buttonTint="#E50914"
+                android:buttonTint="#E07848"
                 android:checked="true"
                 android:text="PG-13"
-                android:textColor="#CCCCCC"
-                android:textSize="14sp" />
+                android:textColor="#E8E8E8"
+                android:textSize="13sp" />
 
             <CheckBox
                 android:id="@+id/cbRatingR"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:buttonTint="#E50914"
+                android:buttonTint="#E07848"
                 android:checked="true"
                 android:text="R"
-                android:textColor="#CCCCCC"
-                android:textSize="14sp" />
+                android:textColor="#E8E8E8"
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- ================================================================
-             YEAR RANGE
-        ================================================================ -->
+        <!-- YEAR RANGE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -212,7 +202,7 @@
             <View
                 android:layout_width="3dp"
                 android:layout_height="18dp"
-                android:background="#E50914"
+                android:background="#E07848"
                 android:layout_marginEnd="10dp" />
 
             <TextView
@@ -220,8 +210,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Release year"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textColor="#F5F5F5"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -229,8 +219,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="2000 — 2026"
-                android:textColor="#E50914"
-                android:textSize="14sp"
+                android:textColor="#E07848"
+                android:textSize="13sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -239,10 +229,10 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="FROM"
-            android:textColor="#666666"
-            android:textSize="10sp"
+            android:textColor="#717171"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:letterSpacing="0.1" />
+            android:letterSpacing="0.08" />
 
         <SeekBar
             android:id="@+id/seekYearMin"
@@ -251,18 +241,18 @@
             android:layout_marginTop="6dp"
             android:max="56"
             android:progress="30"
-            android:progressTint="#E50914"
-            android:thumbTint="#E50914" />
+            android:progressTint="#E07848"
+            android:thumbTint="#E07848" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="TO"
-            android:textColor="#666666"
-            android:textSize="10sp"
+            android:textColor="#717171"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:letterSpacing="0.1" />
+            android:letterSpacing="0.08" />
 
         <SeekBar
             android:id="@+id/seekYearMax"
@@ -271,22 +261,20 @@
             android:layout_marginTop="6dp"
             android:max="56"
             android:progress="56"
-            android:progressTint="#E50914"
-            android:thumbTint="#E50914" />
+            android:progressTint="#E07848"
+            android:thumbTint="#E07848" />
 
-        <!-- ================================================================
-             CREATE BUTTON
-        ================================================================ -->
-        <Button
+        <!-- CREATE BUTTON -->
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/buttonCreateRoom"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_marginTop="36dp"
             android:layout_marginBottom="16dp"
             android:background="@drawable/bg_button_primary"
             android:text="Create Room"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
     </LinearLayout>
