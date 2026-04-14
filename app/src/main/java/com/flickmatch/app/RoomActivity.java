@@ -33,123 +33,115 @@ import java.util.Queue;
 import java.util.Set;
 
 /**
- * The core screen of FlickMatch — Lobby, Swipe, and Watchlist in one Activity.
+ * This is the main screen of FlickMatch, handling the Lobby, Swiping, and
+ * Watchlist in one Activity
  *
- * <p><b>Key data structures (graded):</b>
- * <ul>
- *   <li>{@link #movieQueue} — {@link LinkedList} used as a {@link Queue}.
- *       {@code poll()} from the front is O(1); {@code offer()} to the back
- *       is O(1). An ArrayList would need O(n) removal from index 0.</li>
- *   <li>{@link #mySwipes} — {@link HashMap} for O(1) "already swiped?"
- *       lookup. Prevents showing the same card twice.</li>
- *   <li>{@link #movieCache} — {@link HashMap} keyed by TMDB movie ID for
- *       O(1) retrieval when building the Watchlist without extra API calls.</li>
- * </ul>
+ * Key Data Structure Algorithms (DSA):
+ * 1. movieQueue - A LinkedList used as a queue. Adding and removing movies from
+ * either end is instant (O(1)), whereas an ArrayList would have to shift every
+ * element when removing from the front, which gets slow
  *
- * <p><b>Observer pattern:</b> Firestore snapshot listeners ({@link #roomListener},
- * {@link #swipesListener}) observe remote state changes and push updates to
- * the UI automatically. They are registered in {@code onStart()} and
- * deregistered in {@code onStop()} to prevent memory leaks when the Activity
- * is not visible.
+ * 2. mySwipes - A HashMap that tracks which movies the user has already swiped
+ * on, so the same card never shows up twice. Lookups are instant regardless of
+ * how many movies there are
+ *
+ * 3. movieCache - A HashMap that stores movie data by TMDB ID, so when building
+ * the Watchlist, we can grab the details instantly without making extra API calls.
+ *
+ * Firestore listeners watch for any changes to the room or swipes in real time and
+ * automatically update the UI when something changes. They are started in onStart()
+ * and cleaned up in onStop() so they don't keep running and leak memory when the
+ * screen isn't visible
+ *
  */
+
 public class RoomActivity extends AppCompatActivity {
 
-    // -------------------------------------------------------------------------
-    // Intent extra keys (must match what MainActivity / CreateRoomActivity send)
-    // -------------------------------------------------------------------------
-    public static final String EXTRA_ROOM_ID   = "ROOM_ID";
+    // intent extra keys which matches what is sent from MainActivity & CreateRoomActivity //
+    public static final String EXTRA_ROOM_ID = "ROOM_ID";
     public static final String EXTRA_ROOM_NAME = "ROOM_NAME";
 
-    // -------------------------------------------------------------------------
-    // Firebase / helpers
-    // -------------------------------------------------------------------------
+    // Firebase helpers //
     private FirebaseHelper firebaseHelper;
-    private TMDBHelper     tmdbHelper;
-    private String         currentUid;
+    private TMDBHelper tmdbHelper;
+    private String currentUid;
 
-    // -------------------------------------------------------------------------
-    // Room state
-    // -------------------------------------------------------------------------
+    // Room state //
     private String roomId;
-    private Room   room;   // updated whenever the Firestore listener fires
+    private Room room;   // updated whenever the Firestore listener fires
 
-    // -------------------------------------------------------------------------
-    // Firestore snapshot listeners (Observer pattern)
-    //
-    // Started in onStart() so they're active whenever the Activity is visible.
-    // Removed in onStop() to prevent memory leaks and stale callbacks after
-    // the Activity has been destroyed.
-    // -------------------------------------------------------------------------
+    /**
+     * Firestore snapshot listeners
+     * the activity starts on onStart() and removed on onStop() such that
+     * they're active whenever the activity is visible and prevent memory leaks
+     * and stale callbacks after the activity has been destroyed respectively
+     */
+
     private ListenerRegistration roomListener;
     private ListenerRegistration swipesListener;
 
-    // -------------------------------------------------------------------------
-    // DSA: LinkedList<Movie> used as a Queue
-    //
-    // LinkedList implements the Queue interface.
-    // • peek()  — O(1) look at the front card without removing
-    // • poll()  — O(1) remove from the front after a swipe
-    // • offer() — O(1) append newly-fetched movies to the back
-    //
-    // An ArrayList would require O(n) to remove from index 0.
-    // -------------------------------------------------------------------------
+    /**
+     * DSA - using LinkedList<Movie> as a Queue
+     *
+     * LinkedList takes O(1) time to perform any function, e.g. peek(), poll(), offer(), etc.
+     * Compared to that, ArrayList takes O(n) time to just remove from index 0.
+     */
     private final Queue<Movie> movieQueue = new LinkedList<>();
 
-    // DSA: HashMap for O(1) "have I swiped this already?" lookup.
-    // Key = TMDB movie ID (String), Value = liked (true) or disliked (false).
-    // Without this we could show the same card again after re-entering the Activity.
+    /**
+     * DSA - using HashMap for "have I swiped this already?" lookup, which takes O(1) time.
+     *
+     * The key would be the TMDB movie ID, and the values will be true or false depending on
+     * whether the movie has been liked or disliked. This prevents the same card shown again
+     * after re-entering the activity.
+     */
     private final Map<String, Boolean> mySwipes = new HashMap<>();
 
-    // Movie object cache — avoids calling TMDBHelper.fetchMovieDetails() twice.
-    // Populated as cards are loaded; the Watchlist reads from here first.
+    /**
+     * Movie object cache avoids fetching the movie details twice. This is populated as
+     * the cards are loaded into the activity, from where the Watchlist reads from first.
+     */
     private final Map<String, Movie> movieCache = new HashMap<>();
 
-    // Latest snapshot of all members' swipes, kept current by swipesListener.
+    // Latest snapshot of all members' swipes, updated by swipesListener //
     private Map<String, Map<String, Boolean>> latestAllSwipes = new HashMap<>();
 
-    // TMDB pagination
+    // TMDB pagination //
     private int currentPage = 1;
     private int totalPages  = 1;
 
-    // -------------------------------------------------------------------------
-    // Watchlist state
-    // -------------------------------------------------------------------------
+    // States of Watchlist //
     private final List<Movie> watchlistMovies = new ArrayList<>();
-    private final List<Movie> watchedMovies   = new ArrayList<>();
-    private WatchlistAdapter  watchlistAdapter;
-    private WatchlistAdapter  watchedAdapter;
-    private String            currentSort = "order"; // "order" | "rating" | "popularity"
+    private final List<Movie> watchedMovies = new ArrayList<>();
+    private WatchlistAdapter watchlistAdapter;
+    private WatchlistAdapter watchedAdapter;
+    private String currentSort = "order"; // "order" | "rating" | "popularity"
 
-    // -------------------------------------------------------------------------
-    // Views
-    // -------------------------------------------------------------------------
+    // Views for different sections //
 
     // Tabs
-    private TextView   tabLobby, tabSwipe, tabWatchlist;
+    private TextView tabLobby, tabSwipe, tabWatchlist;
     private ViewFlipper viewFlipper;
 
     // Lobby
-    private TextView     textRoomTitle, textInviteCode;
-    private Button       buttonCopyCode, buttonStartSwiping;
+    private TextView textRoomTitle, textInviteCode;
+    private Button buttonCopyCode, buttonStartSwiping;
     private LinearLayout layoutMembers;
 
     // Swipe
     private FrameLayout movieCard;
-    private ImageView   imagePoster;
-    private TextView    textMovieTitle, textMovieYear, textMovieRating, textMovieOverview;
-    private TextView    textEmptySwipe;
+    private ImageView imagePoster;
+    private TextView textMovieTitle, textMovieYear, textMovieRating, textMovieOverview;
+    private TextView textEmptySwipe;
     private LinearLayout layoutSwipeButtons;
-    private Button      buttonNope, buttonLike;
+    private Button buttonNope, buttonLike;
 
     // Watchlist
     private RecyclerView recyclerWatchlist, recyclerWatched;
-    private TextView     textEmptyWatchlist, headerMatched, headerWatched;
-    private TextView     sortMatchOrder, sortRating, sortPopularity;
+    private TextView textEmptyWatchlist, headerMatched, headerWatched;
+    private TextView sortMatchOrder, sortRating, sortPopularity;
 
-    // =========================================================================
-    // Lifecycle
-    // =========================================================================
-
+    // Lifecycle of activity //
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -160,8 +152,8 @@ public class RoomActivity extends AppCompatActivity {
         }
 
         firebaseHelper = FirebaseHelper.getInstance();
-        tmdbHelper     = new TMDBHelper();
-        currentUid     = firebaseHelper.getCurrentUid();
+        tmdbHelper = new TMDBHelper();
+        currentUid = firebaseHelper.getCurrentUid();
 
         roomId = getIntent().getStringExtra(EXTRA_ROOM_ID);
         String roomName = getIntent().getStringExtra(EXTRA_ROOM_NAME);
@@ -183,22 +175,23 @@ public class RoomActivity extends AppCompatActivity {
             if (getSupportActionBar() != null) getSupportActionBar().setTitle(roomName);
         }
 
-        // Initial room fetch to populate Lobby before the listener fires
+        // initial room fetch to populate Lobby before the listener fires //
         loadRoom();
     }
 
     /**
-     * Start Firestore listeners when the Activity becomes visible.
+     * starting Firestore listeners when the Activity becomes visible.
      *
-     * Observer pattern: listenToRoom / listenToSwipes register callbacks that
-     * Firestore calls automatically on every document change.  We don't poll —
-     * Firestore pushes the update to us.
+     * instead of constantly asking Firestore 'has anything changed?', we register
+     * listeners (listenToRoom / listenToSwipes) that Firestore calls automatically
+     * whenever something updates. It pushes the changes to us in real time, so we
+     * don't have to keep checking.
      */
     @Override
     protected void onStart() {
         super.onStart();
 
-        // Observe room document changes (new members joining, queue updates, etc.)
+        // observe room document changes (new members joining, queue updates, etc.) //
         roomListener = firebaseHelper.listenToRoom(roomId, new FirebaseHelper.RoomCallback() {
             @Override
             public void onSuccess(Room updatedRoom) {
@@ -208,21 +201,22 @@ public class RoomActivity extends AppCompatActivity {
             }
             @Override
             public void onFailure(String error) {
-                // Non-fatal; we already have an initial fetch
+                // not fatal since we already have an initial fetch //
             }
         });
 
-        // Observe every member's swipe document — needed for real-time match detection
+        // observe every member's swipe document which is needed for real-time match detection //
         swipesListener = firebaseHelper.listenToSwipes(roomId, new FirebaseHelper.AllSwipesCallback() {
             @Override
             public void onSuccess(Map<String, Map<String, Boolean>> allSwipes) {
                 latestAllSwipes = allSwipes;
 
-                // Check for new matches triggered by another member's swipe
+                // check for new matches triggered by another member's swipe //
                 if (room != null) {
                     Set<String> matches = MatchingHelper.findMatches(allSwipes, room.getMemberUids());
                     for (String movieId : matches) {
-                        // Only notify if not already in matchedMovies
+
+                        // notify only if not already in matchedMovies //
                         if (room.getMatchedMovies() == null
                                 || !room.getMatchedMovies().contains(movieId)) {
                             String title = movieId; // fallback to ID
@@ -236,16 +230,16 @@ public class RoomActivity extends AppCompatActivity {
             }
             @Override
             public void onFailure(String error) {
-                // Non-fatal
+                // non-fatal //
             }
         });
     }
 
     /**
-     * Remove Firestore listeners when the Activity is no longer visible.
+     * remove Firestore listeners when the Activity is no longer visible.
      *
-     * Failing to call remove() here would keep the listener alive in the
-     * background, delivering callbacks to a dead Activity and leaking memory.
+     * failing to call remove() here would keep the listener alive in the background,
+     * resulting in delivering callbacks to a dead Activity and leaking memory.
      */
     @Override
     protected void onStop() {
@@ -263,46 +257,43 @@ public class RoomActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // =========================================================================
-    // View setup
-    // =========================================================================
-
+    // setup of views //
     private void findViews() {
-        tabLobby     = findViewById(R.id.tabLobby);
-        tabSwipe     = findViewById(R.id.tabSwipe);
+        tabLobby = findViewById(R.id.tabLobby);
+        tabSwipe = findViewById(R.id.tabSwipe);
         tabWatchlist = findViewById(R.id.tabWatchlist);
-        viewFlipper  = findViewById(R.id.viewFlipper);
+        viewFlipper = findViewById(R.id.viewFlipper);
 
-        textRoomTitle      = findViewById(R.id.textRoomTitle);
-        textInviteCode     = findViewById(R.id.textInviteCode);
-        buttonCopyCode     = findViewById(R.id.buttonCopyCode);
+        textRoomTitle = findViewById(R.id.textRoomTitle);
+        textInviteCode = findViewById(R.id.textInviteCode);
+        buttonCopyCode = findViewById(R.id.buttonCopyCode);
         buttonStartSwiping = findViewById(R.id.buttonStartSwiping);
-        layoutMembers      = findViewById(R.id.layoutMembers);
+        layoutMembers = findViewById(R.id.layoutMembers);
 
-        movieCard          = findViewById(R.id.movieCard);
-        imagePoster        = findViewById(R.id.imagePoster);
-        textMovieTitle     = findViewById(R.id.textMovieTitle);
-        textMovieYear      = findViewById(R.id.textMovieYear);
-        textMovieRating    = findViewById(R.id.textMovieRating);
-        textMovieOverview  = findViewById(R.id.textMovieOverview);
-        textEmptySwipe     = findViewById(R.id.textEmptySwipe);
+        movieCard = findViewById(R.id.movieCard);
+        imagePoster = findViewById(R.id.imagePoster);
+        textMovieTitle = findViewById(R.id.textMovieTitle);
+        textMovieYear = findViewById(R.id.textMovieYear);
+        textMovieRating = findViewById(R.id.textMovieRating);
+        textMovieOverview = findViewById(R.id.textMovieOverview);
+        textEmptySwipe = findViewById(R.id.textEmptySwipe);
         layoutSwipeButtons = findViewById(R.id.layoutSwipeButtons);
-        buttonNope         = findViewById(R.id.buttonNope);
-        buttonLike         = findViewById(R.id.buttonLike);
+        buttonNope = findViewById(R.id.buttonNope);
+        buttonLike = findViewById(R.id.buttonLike);
 
-        recyclerWatchlist  = findViewById(R.id.recyclerWatchlist);
-        recyclerWatched    = findViewById(R.id.recyclerWatched);
+        recyclerWatchlist = findViewById(R.id.recyclerWatchlist);
+        recyclerWatched = findViewById(R.id.recyclerWatched);
         textEmptyWatchlist = findViewById(R.id.textEmptyWatchlist);
-        headerMatched      = findViewById(R.id.headerMatched);
-        headerWatched      = findViewById(R.id.headerWatched);
-        sortMatchOrder     = findViewById(R.id.sortMatchOrder);
-        sortRating         = findViewById(R.id.sortRating);
-        sortPopularity     = findViewById(R.id.sortPopularity);
+        headerMatched = findViewById(R.id.headerMatched);
+        headerWatched = findViewById(R.id.headerWatched);
+        sortMatchOrder = findViewById(R.id.sortMatchOrder);
+        sortRating = findViewById(R.id.sortRating);
+        sortPopularity = findViewById(R.id.sortPopularity);
     }
 
     private void setupTabs() {
-        tabLobby.setOnClickListener(v     -> showSection(0));
-        tabSwipe.setOnClickListener(v     -> showSection(1));
+        tabLobby.setOnClickListener(v -> showSection(0));
+        tabSwipe.setOnClickListener(v -> showSection(1));
         tabWatchlist.setOnClickListener(v -> showSection(2));
         showSection(0); // start on Lobby
     }
@@ -325,31 +316,28 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void setupSortButtons() {
-        sortMatchOrder.setOnClickListener(v  -> applySortAndHighlight("order",      sortMatchOrder));
-        sortRating.setOnClickListener(v      -> applySortAndHighlight("rating",     sortRating));
-        sortPopularity.setOnClickListener(v  -> applySortAndHighlight("popularity", sortPopularity));
+        sortMatchOrder.setOnClickListener(v -> applySortAndHighlight("order", sortMatchOrder));
+        sortRating.setOnClickListener(v -> applySortAndHighlight("rating", sortRating));
+        sortPopularity.setOnClickListener(v -> applySortAndHighlight("popularity", sortPopularity));
     }
 
-    // =========================================================================
-    // Tab switching
-    // =========================================================================
+    // switching tabs
 
     /**
      * Shows the requested ViewFlipper section and updates tab highlight colors.
-     *
-     * @param index 0 = Lobby, 1 = Swipe, 2 = Watchlist
+     * index 0 = Lobby, 1 = Swipe, 2 = Watchlist
      */
     private void showSection(int index) {
         viewFlipper.setDisplayedChild(index);
 
-        // Reset all tabs to inactive style
+        // reset all tabs to inactive style //
         for (TextView tab : new TextView[]{tabLobby, tabSwipe, tabWatchlist}) {
             tab.setTextColor(0xFF666666);
             tab.setTypeface(null, android.graphics.Typeface.NORMAL);
             tab.setBackgroundResource(R.drawable.bg_tab_inactive);
         }
 
-        // Highlight the active tab with red pill background
+        // highlight the active tab with red pill background //
         TextView active = index == 0 ? tabLobby : index == 1 ? tabSwipe : tabWatchlist;
         active.setTextColor(0xFFFFFFFF);
         active.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -358,10 +346,7 @@ public class RoomActivity extends AppCompatActivity {
         if (index == 2) refreshWatchlist();
     }
 
-    // =========================================================================
-    // Room loading
-    // =========================================================================
-
+    // loading Room
     private void loadRoom() {
         firebaseHelper.getRoom(roomId, new FirebaseHelper.RoomCallback() {
             @Override
@@ -374,7 +359,7 @@ public class RoomActivity extends AppCompatActivity {
                 }
                 refreshLobbyMembers();
 
-                // Pre-populate the my-swipes map from our own existing swipe doc
+                // pre-populate the my-swipes map from our own existing swipe doc //
                 firebaseHelper.getAllSwipes(roomId, new FirebaseHelper.AllSwipesCallback() {
                     @Override
                     public void onSuccess(Map<String, Map<String, Boolean>> allSwipes) {
@@ -393,10 +378,7 @@ public class RoomActivity extends AppCompatActivity {
         });
     }
 
-    // =========================================================================
-    // Lobby
-    // =========================================================================
-
+    // Lobby section //
     private void copyInviteCode() {
         String code = textInviteCode.getText().toString();
         ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -405,8 +387,8 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     /**
-     * Rebuilds the member list every time the room document changes.
-     * For each UID, fetches the display name from Firestore asynchronously.
+     * Whenever the room data changes, the member list is refreshed from scratch. Each
+     * member's display name is fetched from Firestore in the background as it goes.
      */
     private void refreshLobbyMembers() {
         if (room == null) return;
@@ -416,7 +398,8 @@ public class RoomActivity extends AppCompatActivity {
         if (memberUids == null) return;
 
         for (String uid : memberUids) {
-            // Inflate a row for this member (we build it programmatically)
+
+            // inflate a row for this member (built programmatically) //
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setPadding(0, 8, 0, 8);
@@ -437,7 +420,7 @@ public class RoomActivity extends AppCompatActivity {
 
             layoutMembers.addView(row);
 
-            // Async name fetch — update the TextView once we have the name
+            // async name fetch - update the TextView once we have the name //
             firebaseHelper.getDisplayName(uid, new FirebaseHelper.AuthCallback() {
                 @Override
                 public void onSuccess(String displayName) {
@@ -451,15 +434,12 @@ public class RoomActivity extends AppCompatActivity {
         }
     }
 
-    // =========================================================================
-    // Start swiping — queue initialisation
-    // =========================================================================
-
+    // initialising queue to start swiping //
     private void onStartSwipingClicked() {
         if (room == null) return;
         buttonStartSwiping.setEnabled(false);
 
-        // If the room already has a movie queue saved in Firestore, use it.
+        // use the room's saved movie queue if exists (in Firestore) //
         List<String> existingQueue = room.getMovieQueue();
         if (existingQueue != null && !existingQueue.isEmpty()) {
             loadMovieDetailsForIds(existingQueue);
@@ -467,7 +447,7 @@ public class RoomActivity extends AppCompatActivity {
             return;
         }
 
-        // Otherwise fetch the first page from TMDB.
+        // else, fetch the first page from TMDB //
         currentPage = 1;
         tmdbHelper.fetchMoviesForRoom(room, currentPage, new TMDBHelper.MovieListCallback() {
             @Override
@@ -475,13 +455,13 @@ public class RoomActivity extends AppCompatActivity {
                 totalPages = pages;
                 addMoviesToQueue(movies);
 
-                // Persist the movie IDs to Firestore so other members see the same queue
+                // continue the movie IDs to Firestore so other members see the same queue //
                 List<String> ids = new ArrayList<>();
                 for (Movie m : movies) ids.add(m.getId());
                 firebaseHelper.updateMovieQueue(roomId, ids, new FirebaseHelper.SimpleCallback() {
                     @Override public void onSuccess() {}
                     @Override public void onFailure(String error) {
-                        // Non-fatal — swiping can continue without persistence
+                        // non-fatal as swiping can continue without persistence
                     }
                 });
 
@@ -499,12 +479,13 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     /**
-     * Fetches full Movie details for a list of IDs (e.g. from an existing queue),
+     * fetches full Movie details for a list of IDs (e.g. from an existing queue),
      * then populates the local movie queue.
      */
     private void loadMovieDetailsForIds(List<String> ids) {
         for (String id : ids) {
-            // DSA: HashMap O(1) cache check — skip API call if we already have the movie
+
+            // DSA: HashMap O(1) cache check - skip API call if we already have the movie //
             if (movieCache.containsKey(id)) {
                 movieQueue.offer(movieCache.get(id)); // O(1) enqueue
                 continue;
@@ -519,23 +500,23 @@ public class RoomActivity extends AppCompatActivity {
                 public void onSuccess(Movie movie) {
                     movieCache.put(movie.getId(), movie); // cache for later
                     if (!mySwipes.containsKey(movie.getId())) {
-                        movieQueue.offer(movie); // O(1) — LinkedList add to back
+                        movieQueue.offer(movie); // O(1) - LinkedList add to back
                     }
                     if (movieQueue.size() == 1) showNextCard(); // show first card
                 }
                 @Override
-                public void onFailure(String error) { /* skip this movie */ }
+                public void onFailure(String error) {
+                    // skip this movie
+                }
             });
         }
         showNextCard();
     }
 
-    // =========================================================================
-    // Swiping
-    // =========================================================================
+    // Swiping section //
 
     /**
-     * Handles a swipe action (like or nope).
+     * handles a swipe action (like or nope).
      *
      * Steps:
      * 1. Read the front of the queue (O(1) peek).
@@ -545,51 +526,53 @@ public class RoomActivity extends AppCompatActivity {
      * 5. If the queue is running low, prefetch the next TMDB page.
      */
     private void onSwipe(boolean liked) {
-        // DSA: Queue.peek() is O(1) — look at front without removing
+
+        // DSA: Queue.peek() is O(1) - look at front without removing //
         Movie current = movieQueue.peek();
         if (current == null) return;
 
         buttonLike.setEnabled(false);
         buttonNope.setEnabled(false);
 
-        // DSA: HashMap O(1) write — record this swipe locally
+        // DSA: HashMap O(1) write - record this swipe locally //
         mySwipes.put(current.getId(), liked);
 
         firebaseHelper.saveSwipe(roomId, currentUid, current.getId(), liked,
                 new FirebaseHelper.SimpleCallback() {
-            @Override
-            public void onSuccess() {
-                // DSA: Queue.poll() is O(1) — remove from front of LinkedList
-                movieQueue.poll();
+                    @Override
+                    public void onSuccess() {
 
-                if (liked) checkForMatch(current.getId());
+                        // DSA: Queue.poll() is O(1) - remove from front of LinkedList //
+                        movieQueue.poll();
 
-                showNextCard();
-                buttonLike.setEnabled(true);
-                buttonNope.setEnabled(true);
+                        if (liked) checkForMatch(current.getId());
 
-                // Prefetch next page when queue drops below threshold
-                if (movieQueue.size() < Constants.QUEUE_PREFETCH_THRESHOLD) {
-                    fetchNextPageIfAvailable();
-                }
-            }
-            @Override
-            public void onFailure(String error) {
-                Toast.makeText(RoomActivity.this,
-                        "Swipe failed: " + error, Toast.LENGTH_SHORT).show();
-                // Remove swipe from local map since it wasn't persisted
-                mySwipes.remove(current.getId());
-                buttonLike.setEnabled(true);
-                buttonNope.setEnabled(true);
-            }
-        });
+                        showNextCard();
+                        buttonLike.setEnabled(true);
+                        buttonNope.setEnabled(true);
+
+                        // prefetch next page when queue drops below threshold //
+                        if (movieQueue.size() < Constants.QUEUE_PREFETCH_THRESHOLD) {
+                            fetchNextPageIfAvailable();
+                        }
+                    }
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(RoomActivity.this,
+                                "Swipe failed: " + error, Toast.LENGTH_SHORT).show();
+
+                        // remove swipe from local map since it wasn't persisted //
+                        mySwipes.remove(current.getId());
+                        buttonLike.setEnabled(true);
+                        buttonNope.setEnabled(true);
+                    }
+                });
     }
 
-    /**
-     * Renders the card at the front of movieQueue, or shows the empty state.
-     */
+    // renders the card at the front of movieQueue, or shows the empty state //
     private void showNextCard() {
-        // DSA: Queue.peek() — O(1) look without removing
+
+        // DSA: Queue.peek() - O(1) look without removing //
         Movie next = movieQueue.peek();
 
         if (next == null) {
@@ -607,7 +590,7 @@ public class RoomActivity extends AppCompatActivity {
         textMovieRating.setText("★ " + String.format("%.1f", next.getVoteAverage()));
         textMovieOverview.setText(next.getOverview());
 
-        // Extract year from "YYYY-MM-DD" release date
+        // extract year from "YYYY-MM-DD" release date //
         String releaseDate = next.getReleaseDate();
         if (releaseDate != null && releaseDate.length() >= 4) {
             textMovieYear.setText(releaseDate.substring(0, 4));
@@ -624,7 +607,7 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     /**
-     * Checks whether the just-swiped movie is now a full-room match by running
+     * checks whether the just-swiped movie is now a full-room match by running
      * MatchingHelper against the latest allSwipes snapshot.
      */
     private void checkForMatch(String movieId) {
@@ -643,7 +626,7 @@ public class RoomActivity extends AppCompatActivity {
                 }
                 @Override
                 public void onFailure(String error) {
-                    // Non-fatal — match will be detected again by the listener
+                    // Non-fatal - match will be detected again by the listener
                 }
             });
         }
@@ -659,16 +642,17 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     /**
-     * Adds new Movie objects to the back of the queue, skipping any the user
+     * Adds new Movie objects to the back of the queue, skipping any which the user
      * has already swiped on.
      *
-     * DSA: offer() on LinkedList is O(1) — appends to tail without shifting.
-     * HashMap.containsKey() for mySwipes is O(1).
+     * DSA: offer() on LinkedList takes O(1) time - appends to tail without shifting.
+     * HashMap.containsKey() for mySwipes takes O(1) time.
      */
     private void addMoviesToQueue(List<Movie> movies) {
         for (Movie m : movies) {
             movieCache.put(m.getId(), m); // cache for Watchlist
-            // DSA: O(1) HashMap lookup — skip already-swiped movies
+
+            // DSA: O(1) HashMap lookup - skip already-swiped movies //
             if (!mySwipes.containsKey(m.getId())) {
                 movieQueue.offer(m); // O(1) LinkedList append
             }
@@ -683,7 +667,8 @@ public class RoomActivity extends AppCompatActivity {
             public void onSuccess(List<Movie> movies, int pages) {
                 totalPages = pages;
                 addMoviesToQueue(movies);
-                // If the card area was showing "empty", reveal the new cards
+
+                // if the card area was showing "empty", reveal the new cards //
                 if (movieQueue.peek() != null) showNextCard();
             }
             @Override
@@ -694,12 +679,10 @@ public class RoomActivity extends AppCompatActivity {
         });
     }
 
-    // =========================================================================
-    // Watchlist
-    // =========================================================================
+    // Watchlist section //
 
     /**
-     * Syncs the in-memory watchlist and watched lists from the latest room state,
+     * syncs in-memory watchlist and watched lists from the latest room state,
      * then notifies the adapters.
      */
     private void refreshWatchlist() {
@@ -727,7 +710,7 @@ public class RoomActivity extends AppCompatActivity {
             }
         }
 
-        // Re-apply the current sort before notifying
+        // re-apply the current sort before notifying //
         applySortList(watchlistMovies, currentSort);
 
         boolean hasMatches = !watchlistMovies.isEmpty();
@@ -744,14 +727,14 @@ public class RoomActivity extends AppCompatActivity {
     /**
      * Sorts the provided list in-place using a Comparator selected at runtime.
      *
-     * <p><b>Comparator pattern (graded — demonstrates polymorphism):</b>
-     * The sort strategy is swapped at runtime by choosing a different
-     * Comparator implementation. The {@link Collections#sort} call signature
-     * stays identical — only the comparator changes. This is the Strategy
-     * design pattern expressed through Java's functional interface.
+     * The watchlist can be sorted in different ways by simply swapping out the sorting
+     * strategy at runtime; the rest of the code doesn't change at all. Whichever sort
+     * the user picks (by title, rating, etc.), we just pass a different Comparator to
+     * Collections.sort(). This is known as the Strategy pattern, and it's an example
+     * of polymorphism.
      *
-     * @param movies  the list to sort in-place
-     * @param sortBy  "rating" | "popularity" | anything else = keep order
+     * movies - the list to sort in-place
+     * sortBy - "rating" | "popularity" | anything else = keep order
      */
     private void applySortList(List<Movie> movies, String sortBy) {
         switch (sortBy) {
@@ -766,7 +749,7 @@ public class RoomActivity extends AppCompatActivity {
                         Double.compare(m2.getPopularity(), m1.getPopularity()));
                 break;
             default:
-                // "order" — preserve the original match order, no-op
+                // "order" - preserve the original match order, no-op
                 break;
         }
     }
@@ -776,7 +759,7 @@ public class RoomActivity extends AppCompatActivity {
         applySortList(watchlistMovies, sortBy);
         watchlistAdapter.notifyDataSetChanged();
 
-        // Update button highlight — active = red fill, inactive = grey
+        // update button highlight - active = red fill, inactive = grey
         for (TextView btn : new TextView[]{sortMatchOrder, sortRating, sortPopularity}) {
             btn.setBackgroundResource(R.drawable.bg_sort_inactive);
             btn.setTextColor(0xFF777777);
@@ -785,23 +768,18 @@ public class RoomActivity extends AppCompatActivity {
         selectedButton.setTextColor(0xFFFFFFFF);
     }
 
-    // =========================================================================
-    // Inner class — WatchlistAdapter
-    // =========================================================================
+    // WatchlistAdapter inner class //
 
     /**
      * Adapter shared by both the "Matches" RecyclerView and the "Watched" RecyclerView.
      *
-     * <p>{@code isWatched} controls whether the "Mark Watched" button is shown:
-     * <ul>
-     *   <li>{@code false} — show the button (matched but not yet watched)</li>
-     *   <li>{@code true}  — hide the button (already watched)</li>
-     * </ul>
+     * isWatched controls whether the "Mark Watched" button is shown:
+     * 1. false - show the button (matched but not yet watched)
+     * 2. true - hide the button (already watched)
      */
     private class WatchlistAdapter extends RecyclerView.Adapter<WatchlistAdapter.VH> {
-
-        private final List<Movie>  movies;
-        private final boolean      isWatched;
+        private final List<Movie> movies;
+        private final boolean isWatched;
 
         WatchlistAdapter(List<Movie> movies, boolean isWatched) {
             this.movies    = movies;
@@ -833,17 +811,17 @@ public class RoomActivity extends AppCompatActivity {
                 holder.buttonWatched.setOnClickListener(v -> {
                     firebaseHelper.addWatchedMovie(roomId, movie.getId(),
                             new FirebaseHelper.SimpleCallback() {
-                        @Override
-                        public void onSuccess() {
-                            // Room listener will fire and call refreshWatchlist()
-                        }
-                        @Override
-                        public void onFailure(String error) {
-                            Toast.makeText(RoomActivity.this,
-                                    "Couldn't mark as watched: " + error,
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                                @Override
+                                public void onSuccess() {
+                                    // room listener will fire and call refreshWatchlist() //
+                                }
+                                @Override
+                                public void onFailure(String error) {
+                                    Toast.makeText(RoomActivity.this,
+                                            "Couldn't mark as watched: " + error,
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            });
                 });
             }
         }
@@ -857,9 +835,9 @@ public class RoomActivity extends AppCompatActivity {
 
             VH(View itemView) {
                 super(itemView);
-                title         = itemView.findViewById(R.id.textWatchlistTitle);
-                year          = itemView.findViewById(R.id.textWatchlistYear);
-                rating        = itemView.findViewById(R.id.textWatchlistRating);
+                title = itemView.findViewById(R.id.textWatchlistTitle);
+                year = itemView.findViewById(R.id.textWatchlistYear);
+                rating = itemView.findViewById(R.id.textWatchlistRating);
                 buttonWatched = itemView.findViewById(R.id.buttonMarkWatched);
             }
         }

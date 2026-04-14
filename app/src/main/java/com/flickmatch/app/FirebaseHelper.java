@@ -21,30 +21,25 @@ import java.util.Random;
 /**
  * Single entry point for all Firebase operations in FlickMatch.
  *
- * <p><b>Separation of Concerns:</b> Activities never touch FirebaseAuth or
- * FirebaseFirestore directly. All Firestore paths, query logic, and Auth calls
- * live here. Activities only supply data and implement the callback interfaces
- * defined below to receive results.
+ * Activities never talk to Firebase directly. Instead, they just pass in data and wait for
+ * a result through callbacks. All the Firestore paths, queries, and authentication logic
+ * live here instead of being scattered across the app (aka Singleton).
  *
- * <p><b>Singleton:</b> One instance is created lazily via {@link #getInstance()}
- * and reused. Firebase SDK objects are expensive to initialise and must not be
- * duplicated.
+ * Only one instance of this class is ever created, on the first time it's needed, and that
+ * same instance is reused throughout the app's lifetime. Spinning up Firebase objects more
+ * than once is unnecessary and costly, so we avoid it.
  */
 public class FirebaseHelper {
 
-    // -------------------------------------------------------------------------
-    // Singleton
-    // -------------------------------------------------------------------------
-
+    // Singleton //
     private static FirebaseHelper instance;
-
     private final FirebaseAuth auth;
     private final FirebaseFirestore db;
 
-    /** Private constructor — use {@link #getInstance()} instead. */
+    // Private constructor where we use .getInstance() instead //
     private FirebaseHelper() {
         auth = FirebaseAuth.getInstance();
-        db   = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
     }
 
     /**
@@ -59,9 +54,7 @@ public class FirebaseHelper {
         return instance;
     }
 
-    // =========================================================================
-    // Callback interfaces
-    // =========================================================================
+    // Callback interfaces //
 
     /**
      * Generic string-result callback. Used for Auth operations that return a UID,
@@ -72,99 +65,96 @@ public class FirebaseHelper {
         void onFailure(String error);
     }
 
-    /** Returns a single Room document. */
+    // returns a single Room document //
     public interface RoomCallback {
         void onSuccess(Room room);
         void onFailure(String error);
     }
 
-    /** Returns a list of Room documents. */
+    // returns a list of Room documents //
     public interface RoomsListCallback {
         void onSuccess(List<Room> rooms);
         void onFailure(String error);
     }
 
-    /** Used for write operations where no return value is needed. */
+    // used for write operations where no return value is needed //
     public interface SimpleCallback {
         void onSuccess();
         void onFailure(String error);
     }
 
-    /** Returns a single member's swipe map: movieId → liked. */
+    // returns a single member's swipe map: movieId -> liked. //
     public interface SwipeMapCallback {
         void onSuccess(Map<String, Boolean> swipeMap);
         void onFailure(String error);
     }
 
     /**
-     * Returns swipe data for every member in the room.
-     * Outer key = memberUid, inner map = movieId → liked.
+     * returns swipe data for every member in the room.
+     * outer key = memberUid, inner map = movieId -> liked.
      */
     public interface AllSwipesCallback {
         void onSuccess(Map<String, Map<String, Boolean>> allSwipes);
         void onFailure(String error);
     }
 
-    // =========================================================================
     // Authentication
-    // =========================================================================
 
     /**
-     * Signs the user in anonymously via Firebase Auth.
+     * signs the user in anonymously via Firebase Auth.
      *
-     * <p>If a user is already signed in this session, the existing UID is
-     * returned immediately without a network call — avoids creating duplicate
-     * anonymous accounts on every app launch.
+     * if a user is already signed in this session, the existing UID is returned
+     * immediately without a network call. this avoids creating duplicate anonymous
+     * accounts on every app launch.
      *
-     * @param callback receives the UID on success, or an error message on failure
+     * params:
+     * callback - receives the UID on success, or an error message on failure
      */
     public void signInAnonymously(AuthCallback callback) {
         FirebaseUser current = auth.getCurrentUser();
         if (current != null) {
-            // Already authenticated — return the existing UID immediately.
+
+            // already authenticated - return the existing UID immediately //
             callback.onSuccess(current.getUid());
             return;
         }
 
         auth.signInAnonymously()
-            .addOnSuccessListener(authResult -> {
-                FirebaseUser user = authResult.getUser();
-                if (user != null) {
-                    callback.onSuccess(user.getUid());
-                } else {
-                    callback.onFailure("Sign-in succeeded but user is null");
-                }
-            })
-            .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .addOnSuccessListener(authResult -> {
+                    FirebaseUser user = authResult.getUser();
+                    if (user != null) {
+                        callback.onSuccess(user.getUid());
+                    } else {
+                        callback.onFailure("Sign-in succeeded but user is null");
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-    /**
-     * Returns the current user's UID, or {@code null} if no user is signed in.
-     */
+    // returns the current user's UID, or null if no user is signed in //
     public String getCurrentUid() {
         FirebaseUser user = auth.getCurrentUser();
         return user != null ? user.getUid() : null;
     }
 
-    /** Returns {@code true} if a user is currently signed in. */
+    // Returns true if a user is currently signed in. //
     public boolean isSignedIn() {
         return auth.getCurrentUser() != null;
     }
 
-    // =========================================================================
-    // User operations
-    // =========================================================================
+    // User operations //
 
     /**
-     * Creates or updates the user document at /users/{uid}.
+     * creates or updates the user document at /users/{uid}
      *
-     * <p>Uses {@link SetOptions#merge()} so existing fields (e.g. roomIds) are
-     * preserved. {@code createdAt} is written on first creation and left alone on
-     * subsequent calls because Firestore merge only writes the fields provided.
+     * uses merge mode when saving, so any existing fields (e.g. roomIds) aren't wiped out.
+     * createdAt is only written the first time; on subsequent saves it's simply left out,
+     * so Firestore won't overwrite it.
      *
-     * @param uid         the user's Firebase UID
-     * @param displayName the chosen display name
-     * @param callback    fires onSuccess when written, onFailure on error
+     * params:
+     * uid - the user's Firebase UID
+     * displayName - the chosen display name
+     * callback - fires onSuccess when written, onFailure on error
      */
     public void saveDisplayName(String uid, String displayName, SimpleCallback callback) {
         Map<String, Object> data = new HashMap<>();
@@ -172,55 +162,52 @@ public class FirebaseHelper {
         data.put("createdAt", FieldValue.serverTimestamp());
 
         db.collection(Constants.COLLECTION_USERS)
-          .document(uid)
-          .set(data, SetOptions.merge())
-          .addOnSuccessListener(unused -> callback.onSuccess())
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(uid)
+                .set(data, SetOptions.merge())
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Reads the displayName field from /users/{uid}.
+     * reads the displayName field from /users/{uid}.
      *
-     * @param uid      the user's Firebase UID
-     * @param callback receives the displayName string on success
+     * params:
+     * uid - the user's Firebase UID
+     * callback - receives the displayName string on success
      */
     public void getDisplayName(String uid, AuthCallback callback) {
         db.collection(Constants.COLLECTION_USERS)
-          .document(uid)
-          .get()
-          .addOnSuccessListener(doc -> {
-              if (!doc.exists()) {
-                  callback.onFailure("User document not found for uid: " + uid);
-                  return;
-              }
-              String name = doc.getString("displayName");
-              if (name == null) {
-                  callback.onFailure("displayName field is missing");
-                  return;
-              }
-              callback.onSuccess(name);
-          })
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(uid)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        callback.onFailure("User document not found for uid: " + uid);
+                        return;
+                    }
+                    String name = doc.getString("displayName");
+                    if (name == null) {
+                        callback.onFailure("displayName field is missing");
+                        return;
+                    }
+                    callback.onSuccess(name);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-    // =========================================================================
-    // Room operations
-    // =========================================================================
+    // Room operations //
 
     /**
-     * Creates a new room document in Firestore.
+     * creates a new room document in Firestore in the following steps:
      *
-     * <ol>
-     *   <li>Generates a unique 6-character alphanumeric invite code (up to 5
-     *       attempts to avoid collisions).</li>
-     *   <li>Writes the room document using {@link Room#toMap()}.</li>
-     *   <li>Adds the new roomId to the creator's roomIds list.</li>
-     *   <li>Returns the fully populated Room (with roomId set) via callback.</li>
-     * </ol>
+     * 1. Generates a unique 6-character alphanumeric invite code (up to 5 attempts
+     *    to avoid collisions)
+     * 2. Writes the room document using Room.toMap()
+     * 3. Adds the new roomId to the creator's roomIds list
+     * 4. Returns the fully populated Room (with roomId set) via callback
      *
-     * @param room     a Room built via {@link Room.Builder}, without an invite code
-     *                 (the code is generated here)
-     * @param callback receives the saved Room on success
+     * params:
+     * room - a Room built via Room.Builder, without an invite code (the code is generated here)
+     * callback - receives the saved Room on success
      */
     public void createRoom(Room room, RoomCallback callback) {
         generateUniqueInviteCode(0, code -> {
@@ -237,188 +224,190 @@ public class FirebaseHelper {
             room.setRoomId(roomId);
 
             ref.set(room.toMap())
-               .addOnSuccessListener(unused -> {
-                   // Add roomId to the creator's roomIds list.
-                   db.collection(Constants.COLLECTION_USERS)
-                     .document(room.getCreatorUid())
-                     .update("roomIds", FieldValue.arrayUnion(roomId))
-                     .addOnSuccessListener(u -> callback.onSuccess(room))
-                     .addOnFailureListener(e -> callback.onFailure(
-                             "Room created but failed to update user: " + e.getMessage()));
-               })
-               .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                    .addOnSuccessListener(unused -> {
+                        // Add roomId to the creator's roomIds list.
+                        db.collection(Constants.COLLECTION_USERS)
+                                .document(room.getCreatorUid())
+                                .update("roomIds", FieldValue.arrayUnion(roomId))
+                                .addOnSuccessListener(u -> callback.onSuccess(room))
+                                .addOnFailureListener(e -> callback.onFailure(
+                                        "Room created but failed to update user: " + e.getMessage()));
+                    })
+                    .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
         });
     }
 
     /**
-     * Joins a room by invite code.
+     * joins a room by invite code.
      *
-     * <p>Queries for a room with the given invite code, checks capacity, adds
-     * the user's UID to memberUids (arrayUnion is idempotent — safe if the user
-     * somehow calls join twice), and adds the roomId to the user's roomIds.
+     * this queries for a room with the given invite code, checks capacity, adds the user's
+     * UID to memberUids (arrayUnion is idempotent - safe if the user somehow calls join twice),
+     * and adds the roomId to the user's roomIds.
      *
-     * @param inviteCode 6-character code displayed to the room creator
-     * @param uid        the joining user's UID
-     * @param callback   receives the joined Room on success
+     * params:
+     * inviteCode - 6-character code displayed to the room creator
+     * uid - the joining user's UID
+     * callback - receives the joined Room on success
      */
     public void joinRoom(String inviteCode, String uid, RoomCallback callback) {
         db.collection(Constants.COLLECTION_ROOMS)
-          .whereEqualTo("inviteCode", inviteCode.toUpperCase())
-          .get()
-          .addOnSuccessListener(query -> {
-              if (query.isEmpty()) {
-                  callback.onFailure("No room found with invite code: " + inviteCode);
-                  return;
-              }
+                .whereEqualTo("inviteCode", inviteCode.toUpperCase())
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (query.isEmpty()) {
+                        callback.onFailure("No room found with invite code: " + inviteCode);
+                        return;
+                    }
 
-              DocumentSnapshot doc = query.getDocuments().get(0);
-              List<?> members = (List<?>) doc.get("memberUids");
-              int memberCount = members != null ? members.size() : 0;
+                    DocumentSnapshot doc = query.getDocuments().get(0);
+                    List<?> members = (List<?>) doc.get("memberUids");
+                    int memberCount = members != null ? members.size() : 0;
 
-              if (memberCount >= Constants.MAX_ROOM_MEMBERS) {
-                  callback.onFailure("Room is full (max " + Constants.MAX_ROOM_MEMBERS + " members)");
-                  return;
-              }
+                    if (memberCount >= Constants.MAX_ROOM_MEMBERS) {
+                        callback.onFailure("Room is full (max " + Constants.MAX_ROOM_MEMBERS + " members)");
+                        return;
+                    }
 
-              String roomId = doc.getId();
+                    String roomId = doc.getId();
 
-              // Add uid to room's memberUids and to user's roomIds atomically.
-              db.collection(Constants.COLLECTION_ROOMS)
-                .document(roomId)
-                .update("memberUids", FieldValue.arrayUnion(uid))
-                .addOnSuccessListener(unused ->
-                    db.collection(Constants.COLLECTION_USERS)
-                      .document(uid)
-                      .update("roomIds", FieldValue.arrayUnion(roomId))
-                      .addOnSuccessListener(u -> {
-                          // Re-fetch the room so the callback gets fresh data.
-                          getRoom(roomId, callback);
-                      })
-                      .addOnFailureListener(e -> callback.onFailure(
-                              "Joined room but failed to update user: " + e.getMessage())))
+                    // add uid to room's memberUids and to user's roomIds atomically //
+                    db.collection(Constants.COLLECTION_ROOMS)
+                            .document(roomId)
+                            .update("memberUids", FieldValue.arrayUnion(uid))
+                            .addOnSuccessListener(unused ->
+                                    db.collection(Constants.COLLECTION_USERS)
+                                            .document(uid)
+                                            .update("roomIds", FieldValue.arrayUnion(roomId))
+                                            .addOnSuccessListener(u -> {
+                                                // re-fetch the room so the callback gets fresh data //
+                                                getRoom(roomId, callback);
+                                            })
+                                            .addOnFailureListener(e -> callback.onFailure(
+                                                    "Joined room but failed to update user: " + e.getMessage())))
+                            .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                })
                 .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
-          })
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Fetches a single room document by its Firestore document ID.
+     * fetches a single room document by its Firestore document ID.
      *
-     * @param roomId   Firestore document ID (not the invite code)
-     * @param callback receives the Room on success
+     * params:
+     * roomId - Firestore document ID (not the invite code)
+     * callback - receives the Room on success
      */
     public void getRoom(String roomId, RoomCallback callback) {
         db.collection(Constants.COLLECTION_ROOMS)
-          .document(roomId)
-          .get()
-          .addOnSuccessListener(doc -> {
-              if (!doc.exists()) {
-                  callback.onFailure("Room not found: " + roomId);
-                  return;
-              }
-              Room room = documentToRoom(doc);
-              callback.onSuccess(room);
-          })
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(roomId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        callback.onFailure("Room not found: " + roomId);
+                        return;
+                    }
+                    Room room = documentToRoom(doc);
+                    callback.onSuccess(room);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Fetches all rooms the user belongs to.
+     * fetches all rooms the user belongs to.
      *
-     * <p>Reads roomIds from /users/{uid}, then fetches each room document.
-     * Results are returned once ALL fetches complete (fan-out approach using a
-     * simple counter to detect completion).
+     * this reads roomIds from /users/{uid}, then fetches each room document. the results
+     * are returned once all fetches complete (fan-out approach using a simple counter to
+     * detect completion).
      *
-     * @param uid      the user's Firebase UID
-     * @param callback receives the list of Room objects on success
+     * params:
+     * uid - the user's Firebase UID
+     * callback - receives the list of Room objects on success
      */
     public void getUserRooms(String uid, RoomsListCallback callback) {
         db.collection(Constants.COLLECTION_USERS)
-          .document(uid)
-          .get()
-          .addOnSuccessListener(userDoc -> {
-              if (!userDoc.exists()) {
-                  callback.onFailure("User document not found: " + uid);
-                  return;
-              }
+                .document(uid)
+                .get()
+                .addOnSuccessListener(userDoc -> {
+                    if (!userDoc.exists()) {
+                        callback.onFailure("User document not found: " + uid);
+                        return;
+                    }
 
-              List<String> roomIds = (List<String>) userDoc.get("roomIds");
-              if (roomIds == null || roomIds.isEmpty()) {
-                  callback.onSuccess(new ArrayList<>());
-                  return;
-              }
+                    List<String> roomIds = (List<String>) userDoc.get("roomIds");
+                    if (roomIds == null || roomIds.isEmpty()) {
+                        callback.onSuccess(new ArrayList<>());
+                        return;
+                    }
 
-              List<Room> rooms = new ArrayList<>();
-              int[] remaining = {roomIds.size()}; // single-element array for lambda mutation
+                    List<Room> rooms = new ArrayList<>();
+                    int[] remaining = {roomIds.size()}; // single-element array for lambda mutation
 
-              for (String roomId : roomIds) {
-                  db.collection(Constants.COLLECTION_ROOMS)
-                    .document(roomId)
-                    .get()
-                    .addOnSuccessListener(doc -> {
-                        if (doc.exists()) {
-                            rooms.add(documentToRoom(doc));
-                        }
-                        remaining[0]--;
-                        if (remaining[0] == 0) {
-                            callback.onSuccess(rooms);
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        remaining[0]--;
-                        if (remaining[0] == 0) {
-                            // Return whatever we managed to fetch.
-                            callback.onSuccess(rooms);
-                        }
-                    });
-              }
-          })
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                    for (String roomId : roomIds) {
+                        db.collection(Constants.COLLECTION_ROOMS)
+                                .document(roomId)
+                                .get()
+                                .addOnSuccessListener(doc -> {
+                                    if (doc.exists()) {
+                                        rooms.add(documentToRoom(doc));
+                                    }
+                                    remaining[0]--;
+                                    if (remaining[0] == 0) {
+                                        callback.onSuccess(rooms);
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    remaining[0]--;
+                                    if (remaining[0] == 0) {
+                                        // return whatever we managed to fetch.
+                                        callback.onSuccess(rooms);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Attaches a real-time listener to a room document.
+     * attaches a real-time listener to a room document.
      *
-     * <p>The callback fires immediately with the current state, then again
-     * every time the document changes. The caller MUST store the returned
-     * {@link ListenerRegistration} and call {@code .remove()} in
-     * {@code Activity.onStop()} to avoid memory leaks.
+     * the callback fires immediately with the current state, and again every time the
+     * document changes. The caller should store the returned ListenerRegistration and
+     * call .remove() in Activity.onStop() to avoid memory leaks.
      *
-     * @param roomId   Firestore document ID
-     * @param callback receives the updated Room on every change
-     * @return a registration handle — call {@code .remove()} when done
+     * params:
+     * roomId - Firestore document ID
+     * callback - receives the updated Room on every change
+     * this returns a registration handle - call .remove() when done
      */
     public ListenerRegistration listenToRoom(String roomId, RoomCallback callback) {
         return db.collection(Constants.COLLECTION_ROOMS)
-                 .document(roomId)
-                 .addSnapshotListener((doc, error) -> {
-                     if (error != null) {
-                         callback.onFailure(error.getMessage());
-                         return;
-                     }
-                     if (doc == null || !doc.exists()) {
-                         callback.onFailure("Room document does not exist: " + roomId);
-                         return;
-                     }
-                     callback.onSuccess(documentToRoom(doc));
-                 });
+                .document(roomId)
+                .addSnapshotListener((doc, error) -> {
+                    if (error != null) {
+                        callback.onFailure(error.getMessage());
+                        return;
+                    }
+                    if (doc == null || !doc.exists()) {
+                        callback.onFailure("Room document does not exist: " + roomId);
+                        return;
+                    }
+                    callback.onSuccess(documentToRoom(doc));
+                });
     }
 
-    // =========================================================================
     // Swipe operations
-    // =========================================================================
 
     /**
-     * Records a single swipe for a member.
+     * records a single swipe for a member.
      *
-     * <p>Uses {@link SetOptions#merge()} so previous swipes in the same document
-     * are preserved — only the new movieId key is added or overwritten.
+     * this uses SetOptions.merge() so previous swipes in the same document are preserved -
+     * only the new movieId key is added or overwritten.
      *
-     * @param roomId   the room this swipe belongs to
-     * @param uid      the swiping member's UID
-     * @param movieId  TMDB movie ID (stored as String throughout the app)
-     * @param liked    {@code true} = swiped right, {@code false} = swiped left
-     * @param callback fires onSuccess when written
+     * params:
+     * roomId - the room this swipe belongs to
+     * uid - the swiping member's UID
+     * movieId - TMDB movie ID (stored as String throughout the app)
+     * liked - {@code true} = swiped right, {@code false} = swiped left
+     * callback - fires onSuccess when written
      */
     public void saveSwipe(String roomId, String uid, String movieId,
                           boolean liked, SimpleCallback callback) {
@@ -428,142 +417,145 @@ public class FirebaseHelper {
         data.put("swipeMap", swipeEntry);
 
         db.collection(Constants.COLLECTION_ROOMS)
-          .document(roomId)
-          .collection(Constants.COLLECTION_SWIPES)
-          .document(uid)
-          .set(data, SetOptions.merge())
-          .addOnSuccessListener(unused -> callback.onSuccess())
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(roomId)
+                .collection(Constants.COLLECTION_SWIPES)
+                .document(uid)
+                .set(data, SetOptions.merge())
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Reads the swipe document for a single member.
+     * reads the swipe document for a single member.
      *
-     * @param roomId   the room document ID
-     * @param uid      the member whose swipes to fetch
-     * @param callback receives the swipeMap (movieId → liked)
+     * params:
+     * roomId - the room document ID
+     * uid - the member whose swipes to fetch
+     * callback - receives the swipeMap (movieId -> liked)
      */
     public void getSwipesForMember(String roomId, String uid, SwipeMapCallback callback) {
         db.collection(Constants.COLLECTION_ROOMS)
-          .document(roomId)
-          .collection(Constants.COLLECTION_SWIPES)
-          .document(uid)
-          .get()
-          .addOnSuccessListener(doc -> {
-              if (!doc.exists()) {
-                  // No swipes yet is a valid state, not an error.
-                  callback.onSuccess(new HashMap<>());
-                  return;
-              }
-              Map<String, Boolean> swipeMap = extractSwipeMap(doc);
-              callback.onSuccess(swipeMap);
-          })
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(roomId)
+                .collection(Constants.COLLECTION_SWIPES)
+                .document(uid)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        // no swipes yet is a valid state, not an error //
+                        callback.onSuccess(new HashMap<>());
+                        return;
+                    }
+                    Map<String, Boolean> swipeMap = extractSwipeMap(doc);
+                    callback.onSuccess(swipeMap);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Reads swipe documents for ALL members in a room.
+     * reads swipe documents for all members in a room.
      *
-     * @param roomId   the room document ID
-     * @param callback receives a map of memberUid → swipeMap
+     * params:
+     * roomId - the room document ID
+     * callback - receives a map of memberUid -> swipeMap
      */
     public void getAllSwipes(String roomId, AllSwipesCallback callback) {
         db.collection(Constants.COLLECTION_ROOMS)
-          .document(roomId)
-          .collection(Constants.COLLECTION_SWIPES)
-          .get()
-          .addOnSuccessListener(query -> {
-              Map<String, Map<String, Boolean>> allSwipes = new HashMap<>();
-              for (QueryDocumentSnapshot doc : query) {
-                  allSwipes.put(doc.getId(), extractSwipeMap(doc));
-              }
-              callback.onSuccess(allSwipes);
-          })
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(roomId)
+                .collection(Constants.COLLECTION_SWIPES)
+                .get()
+                .addOnSuccessListener(query -> {
+                    Map<String, Map<String, Boolean>> allSwipes = new HashMap<>();
+                    for (QueryDocumentSnapshot doc : query) {
+                        allSwipes.put(doc.getId(), extractSwipeMap(doc));
+                    }
+                    callback.onSuccess(allSwipes);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Attaches a real-time listener to the entire swipes subcollection.
+     * attaches a real-time listener to the entire swipes subcollection.
      *
-     * <p>Fires whenever any member's swipe document changes. The caller must
-     * store and {@code .remove()} the returned registration in
-     * {@code Activity.onStop()}.
+     * this fires whenever any member's swipe document changes. The caller must store
+     * and .remove() the returned registration in Activity.onStop()
      *
-     * @param roomId   the room document ID
-     * @param callback receives the full memberUid → swipeMap on each change
-     * @return a registration handle — call {@code .remove()} when done
+     * params:
+     * roomId - the room document ID
+     * callback - receives the full memberUid -> swipeMap on each change
+     * this returns a registration handle - call .remove() when done
      */
     public ListenerRegistration listenToSwipes(String roomId, AllSwipesCallback callback) {
         return db.collection(Constants.COLLECTION_ROOMS)
-                 .document(roomId)
-                 .collection(Constants.COLLECTION_SWIPES)
-                 .addSnapshotListener((query, error) -> {
-                     if (error != null) {
-                         callback.onFailure(error.getMessage());
-                         return;
-                     }
-                     if (query == null) {
-                         callback.onSuccess(new HashMap<>());
-                         return;
-                     }
-                     Map<String, Map<String, Boolean>> allSwipes = new HashMap<>();
-                     for (QueryDocumentSnapshot doc : query) {
-                         allSwipes.put(doc.getId(), extractSwipeMap(doc));
-                     }
-                     callback.onSuccess(allSwipes);
-                 });
+                .document(roomId)
+                .collection(Constants.COLLECTION_SWIPES)
+                .addSnapshotListener((query, error) -> {
+                    if (error != null) {
+                        callback.onFailure(error.getMessage());
+                        return;
+                    }
+                    if (query == null) {
+                        callback.onSuccess(new HashMap<>());
+                        return;
+                    }
+                    Map<String, Map<String, Boolean>> allSwipes = new HashMap<>();
+                    for (QueryDocumentSnapshot doc : query) {
+                        allSwipes.put(doc.getId(), extractSwipeMap(doc));
+                    }
+                    callback.onSuccess(allSwipes);
+                });
     }
 
-    // =========================================================================
-    // Room update operations
-    // =========================================================================
+    // Room update operations //
 
     /**
-     * Replaces the movieQueue field on a room document.
+     * replaces the movieQueue field on a room document.
      *
-     * <p>Called by the queue manager when a new page of movies is fetched from
-     * TMDB and needs to be shared with all room members.
+     * this is called by the queue manager when a new page of movies is fetched from TMDB
+     * and needs to be shared with all room members
      *
-     * @param roomId   the room document ID
-     * @param movieIds ordered list of TMDB movie IDs (as Strings)
-     * @param callback fires onSuccess when written
+     * params:
+     * roomId - the room document ID
+     * movieIds - ordered list of TMDB movie IDs (as Strings)
+     * callback - fires onSuccess when written
      */
     public void updateMovieQueue(String roomId, List<String> movieIds, SimpleCallback callback) {
         db.collection(Constants.COLLECTION_ROOMS)
-          .document(roomId)
-          .update("movieQueue", movieIds)
-          .addOnSuccessListener(unused -> callback.onSuccess())
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(roomId)
+                .update("movieQueue", movieIds)
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Adds a movie to the room's matchedMovies list.
+     * adds a movie to the room's matchedMovies list.
      *
-     * <p>{@link FieldValue#arrayUnion} ensures no duplicates even if called twice
-     * for the same movie (e.g. a race condition between two members' last swipes).
+     * FieldValue.arrayUnion ensures no duplicates even if called for the same movie twice
+     * (e.g. a race condition between two members' last swipes)
      *
-     * @param roomId   the room document ID
-     * @param movieId  TMDB movie ID (String)
-     * @param callback fires onSuccess when written
+     * params:
+     * roomId - the room document ID
+     * movieId - TMDB movie ID (String)
+     * callback - fires onSuccess when written
      */
     public void addMatchedMovie(String roomId, String movieId, SimpleCallback callback) {
         db.collection(Constants.COLLECTION_ROOMS)
-          .document(roomId)
-          .update("matchedMovies", FieldValue.arrayUnion(movieId))
-          .addOnSuccessListener(unused -> callback.onSuccess())
-          .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .document(roomId)
+                .update("matchedMovies", FieldValue.arrayUnion(movieId))
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     /**
-     * Moves a movie from matchedMovies to watchedMovies atomically.
+     * moves a movie from matchedMovies to watchedMovies atomically.
      *
-     * <p>A {@link WriteBatch} ensures both the remove and the add happen together.
-     * If either step fails, Firestore rolls back both — the movie cannot end up
-     * missing from both lists or present in both lists simultaneously.
+     * a WriteBatch ensures both the remove and the add happen together. if either step fails,
+     * Firestore rolls back both - the movie cannot end up missing from both lists or present
+     * in both lists simultaneously.
      *
-     * @param roomId   the room document ID
-     * @param movieId  TMDB movie ID (String)
-     * @param callback fires onSuccess when the batch commits
+     * params:
+     * roomId - the room document ID
+     * movieId - TMDB movie ID (String)
+     * callback - fires onSuccess when the batch commits
      */
     public void addWatchedMovie(String roomId, String movieId, SimpleCallback callback) {
         DocumentReference roomRef = db.collection(Constants.COLLECTION_ROOMS).document(roomId);
@@ -573,20 +565,19 @@ public class FirebaseHelper {
         batch.update(roomRef, "watchedMovies", FieldValue.arrayUnion(movieId));
 
         batch.commit()
-             .addOnSuccessListener(unused -> callback.onSuccess())
-             .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-    // =========================================================================
-    // Private helpers
-    // =========================================================================
+    // Private helpers //
 
     /**
-     * Recursively generates a unique invite code, retrying up to 5 times if the
-     * generated code already exists in Firestore.
+     * recursively generates a unique invite code, retrying up to 5 times if the generated
+     * code already exists in Firestore.
      *
-     * @param attempt  current attempt index (0-based); stops at 5
-     * @param listener receives the unique code, or {@code null} after 5 failures
+     * params:
+     * attempt - current attempt index (0-based); stops at 5
+     * listener - receives the unique code, or null after 5 failures
      */
     private void generateUniqueInviteCode(int attempt, InviteCodeListener listener) {
         if (attempt >= 5) {
@@ -597,23 +588,23 @@ public class FirebaseHelper {
         String code = randomCode(Constants.INVITE_CODE_LENGTH);
 
         db.collection(Constants.COLLECTION_ROOMS)
-          .whereEqualTo("inviteCode", code)
-          .get()
-          .addOnSuccessListener(query -> {
-              if (query.isEmpty()) {
-                  listener.onResult(code); // no collision — use this code
-              } else {
-                  generateUniqueInviteCode(attempt + 1, listener); // try again
-              }
-          })
-          .addOnFailureListener(e -> {
-              // On query failure, fall back to using the code anyway rather than
-              // blocking room creation entirely. Collisions are astronomically rare.
-              listener.onResult(code);
-          });
+                .whereEqualTo("inviteCode", code)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (query.isEmpty()) {
+                        listener.onResult(code); // no collision; use this code
+                    } else {
+                        generateUniqueInviteCode(attempt + 1, listener); // try again
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // on query failure, fall back to using the code anyway rather than
+                    // blocking room creation entirely. Collisions are astronomically rare
+                    listener.onResult(code);
+                });
     }
 
-    /** Generates a random uppercase alphanumeric string of the given length. */
+    // generates a random uppercase alphanumeric string of the given length. //
     private static String randomCode(int length) {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         Random random = new Random();
@@ -624,17 +615,16 @@ public class FirebaseHelper {
         return sb.toString();
     }
 
-    /** Internal callback used only by {@link #generateUniqueInviteCode}. */
+    // internal callback used only by .generateUniqueInviteCode //
     private interface InviteCodeListener {
         void onResult(String code);
     }
 
     /**
-     * Converts a Firestore {@link DocumentSnapshot} to a {@link Room} object.
+     * converts a Firestore DocumentSnapshot to a Room object.
      *
-     * <p>Reads each field by name and populates the Room via setters. The
-     * roomId is set from the document ID (it is the path, not a Firestore field).
-     * Numeric fields arrive as Long from Firestore and are cast to int.
+     * This reads each field by name and populates the Room via setters. The roomId is set
+     * from the document ID. Numeric fields arrive as Long from Firestore and are cast to int.
      */
     private Room documentToRoom(DocumentSnapshot doc) {
         Room room = new Room();
@@ -676,9 +666,8 @@ public class FirebaseHelper {
     }
 
     /**
-     * Extracts the {@code swipeMap} field from a swipe document.
-     * Firestore stores booleans natively, so the cast is safe.
-     * Returns an empty map if the field is absent.
+     * extracts the swipeMap field from a swipe document. Firestore stores booleans natively,
+     * so the cast is safe. this returns an empty map if the field is absent.
      */
     @SuppressWarnings("unchecked")
     private Map<String, Boolean> extractSwipeMap(DocumentSnapshot doc) {

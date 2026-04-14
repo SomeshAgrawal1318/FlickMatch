@@ -5,24 +5,19 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 /**
- * Maps TMDB's paginated discover response to a Java object.
- *
- * <p>TMDB wraps movie results in a pagination envelope:
- * <pre>
+ * represents the response we get back from TMDB when fetching movies. the TMDB wraps
+ * results in a pagination envelope that looks like this:
  * {
  *   "page": 1,
  *   "results": [ {...}, {...} ],
  *   "total_results": 10000,
  *   "total_pages": 500
  * }
- * </pre>
  *
- * <p>Gson deserializes the JSON directly into this class. The no-arg
- * constructor is required by Gson — it instantiates the class before
- * populating fields via reflection.
+ * Gson automatically converts this JSON into a Java object for us. The empty constructor
+ * is required for Gson to work - it creates the object first, then fills in the fields.
  */
 public class DiscoverResponse {
-
     @SerializedName("page")
     private int page;
 
@@ -35,11 +30,11 @@ public class DiscoverResponse {
     @SerializedName("total_pages")
     private int totalPages;
 
-    /** Required by Gson for deserialization. */
+    // required by Gson for deserialization //
     public DiscoverResponse() {}
 
-    public int getPage()              { return page; }
-    public List<Movie> getResults()   { return results; }
-    public int getTotalResults()      { return totalResults; }
-    public int getTotalPages()        { return totalPages; }
+    public int getPage(){ return page; }
+    public List<Movie> getResults(){ return results; }
+    public int getTotalResults(){ return totalResults; }
+    public int getTotalPages(){ return totalPages; }
 }

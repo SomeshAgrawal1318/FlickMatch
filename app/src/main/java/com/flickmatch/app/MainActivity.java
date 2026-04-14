@@ -1,11 +1,5 @@
 package com.flickmatch.app;
 
-// IMPORTANT: Before running the app, register the following activities in AndroidManifest.xml
-// inside the <application> tag:
-//
-//   <activity android:name=".CreateRoomActivity" />
-//   <activity android:name=".RoomActivity" />
-
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
@@ -30,32 +24,23 @@ import java.util.List;
 /**
  * Entry point for FlickMatch. Manages three sequential UI states:
  *
- * <ol>
- *   <li><b>Loading</b> — anonymous Firebase sign-in runs in background.</li>
- *   <li><b>Name entry</b> — first-time users choose a display name.</li>
- *   <li><b>Rooms list</b> — returning users see their rooms and can create/join.</li>
- * </ol>
+ * 1. Loading screen — anonymous Firebase sign-in runs in background
+ * 2. Name entry — first-time users choose a display name
+ * 3. Rooms list — returning users see their rooms and can create/join
  *
- * All Firebase calls are delegated to {@link FirebaseHelper}. No Firebase SDK
- * calls are made directly from this Activity (Separation of Concerns).
  */
+
 public class MainActivity extends AppCompatActivity {
 
-    // -------------------------------------------------------------------------
-    // Views — loading state
-    // -------------------------------------------------------------------------
+    // loading state views //
     private LinearLayout layoutLoading;
 
-    // -------------------------------------------------------------------------
-    // Views — name entry state
-    // -------------------------------------------------------------------------
+    // name entry state views //
     private LinearLayout layoutNameEntry;
     private EditText editDisplayName;
     private Button buttonContinue;
 
-    // -------------------------------------------------------------------------
-    // Views — rooms list state
-    // -------------------------------------------------------------------------
+    // rooms list state views //
     private LinearLayout layoutRoomsList;
     private TextView textGreeting;
     private RecyclerView recyclerRooms;
@@ -63,18 +48,13 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonCreateRoom;
     private Button buttonJoinRoom;
 
-    // -------------------------------------------------------------------------
-    // State
-    // -------------------------------------------------------------------------
+    // states //
     private FirebaseHelper firebaseHelper;
     private String currentUid;
     private String currentDisplayName;
     private RoomAdapter roomAdapter;
 
-    // -------------------------------------------------------------------------
-    // Lifecycle
-    // -------------------------------------------------------------------------
-
+    // lifecycle of app //
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,36 +70,31 @@ public class MainActivity extends AppCompatActivity {
         startAuthFlow();
     }
 
-    /**
-     * Reload the rooms list each time the user returns to this screen
-     * (e.g., after creating a new room in CreateRoomActivity).
-     */
+    // reload rooms list every time the user returns to this screen
     @Override
     protected void onResume() {
         super.onResume();
-        // Only reload if we're already on the rooms list state.
+
+        // reload only if we're already on the rooms list state //
         if (layoutRoomsList != null && layoutRoomsList.getVisibility() == View.VISIBLE) {
             loadUserRooms();
         }
     }
 
-    // -------------------------------------------------------------------------
-    // View setup
-    // -------------------------------------------------------------------------
-
+    // setup of on-screen elements in layouts //
     private void findViews() {
-        layoutLoading   = findViewById(R.id.layoutLoading);
+        layoutLoading = findViewById(R.id.layoutLoading);
         layoutNameEntry = findViewById(R.id.layoutNameEntry);
         layoutRoomsList = findViewById(R.id.layoutRoomsList);
 
         editDisplayName = findViewById(R.id.editDisplayName);
-        buttonContinue  = findViewById(R.id.buttonContinue);
+        buttonContinue = findViewById(R.id.buttonContinue);
 
-        textGreeting   = findViewById(R.id.textGreeting);
-        recyclerRooms  = findViewById(R.id.recyclerRooms);
+        textGreeting = findViewById(R.id.textGreeting);
+        recyclerRooms = findViewById(R.id.recyclerRooms);
         textEmptyRooms = findViewById(R.id.textEmptyRooms);
         buttonCreateRoom = findViewById(R.id.buttonCreateRoom);
-        buttonJoinRoom   = findViewById(R.id.buttonJoinRoom);
+        buttonJoinRoom = findViewById(R.id.buttonJoinRoom);
     }
 
     private void setupRecyclerView() {
@@ -134,36 +109,36 @@ public class MainActivity extends AppCompatActivity {
         buttonJoinRoom.setOnClickListener(v -> showJoinRoomDialog());
     }
 
-    // -------------------------------------------------------------------------
-    // Auth flow
-    // -------------------------------------------------------------------------
-
-    /**
-     * Starts anonymous sign-in, then checks whether the user already has a
-     * display name to decide which state to show next.
+    /** authentication flow - starts with a sign in and checks if user has
+     * a display name before deciding the next state to show
      */
     private void startAuthFlow() {
         firebaseHelper.signInAnonymously(new FirebaseHelper.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
                 currentUid = uid;
-                // Check whether this user already set a display name.
+
+                // checks if user has set a display name //
                 firebaseHelper.getDisplayName(uid, new FirebaseHelper.AuthCallback() {
                     @Override
                     public void onSuccess(String displayName) {
                         if (displayName != null && !displayName.trim().isEmpty()) {
-                            // Returning user — go straight to rooms list.
+
+                            // goes to room list if it's returning user //
                             currentDisplayName = displayName;
                             showRoomsListState(displayName);
+
                         } else {
-                            // Display name exists but is blank — treat as new user.
+
+                            // else display name is blank; treat as new user & go to name entry state //
                             showNameEntryState();
                         }
                     }
 
                     @Override
                     public void onFailure(String error) {
-                        // No user document yet — first-time user.
+
+                        // first-time user, go to name entry state //
                         showNameEntryState();
                     }
                 });
@@ -173,15 +148,13 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 Toast.makeText(MainActivity.this,
                         "Sign-in failed: " + error, Toast.LENGTH_LONG).show();
-                // Stay on loading; user can restart the app.
+
+                // stay on loading state so user can restart the app //
             }
         });
     }
 
-    // -------------------------------------------------------------------------
-    // State transitions
-    // -------------------------------------------------------------------------
-
+    // transitions between states //
     private void showLoadingState() {
         layoutLoading.setVisibility(View.VISIBLE);
         layoutNameEntry.setVisibility(View.GONE);
@@ -203,10 +176,7 @@ public class MainActivity extends AppCompatActivity {
         loadUserRooms();
     }
 
-    // -------------------------------------------------------------------------
-    // Name entry
-    // -------------------------------------------------------------------------
-
+    // name entry state //
     private void onContinueClicked() {
         String name = editDisplayName.getText().toString().trim();
 
@@ -237,10 +207,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Rooms list
-    // -------------------------------------------------------------------------
-
+    // rooms list state //
     private void loadUserRooms() {
         firebaseHelper.getUserRooms(currentUid, new FirebaseHelper.RoomsListCallback() {
             @Override
@@ -269,14 +236,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showJoinRoomDialog() {
-        // Build a simple AlertDialog with an EditText for the invite code.
+
+        // display an AlertDialog with an EditText for the invite code //
         EditText codeInput = new EditText(this);
         codeInput.setHint("Invite code");
         codeInput.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
         codeInput.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(Constants.INVITE_CODE_LENGTH) });
 
-        // Wrap in a LinearLayout to apply padding (AlertDialog doesn't pad views automatically).
+        // wrap in a LinearLayout to apply padding as AlertDialog doesn't pad views automatically //
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
         int px = dpToPx(16);
@@ -316,26 +284,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Utility
-    // -------------------------------------------------------------------------
-
+    // ensure display looks consistent across all devices //
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
     }
 
-    // =========================================================================
-    // Inner class — RoomAdapter
-    // =========================================================================
-
     /**
      * RecyclerView adapter for the rooms list.
      *
-     * <p>Defined as an inner class of MainActivity so it can reference
-     * {@code MainActivity.this} to start RoomActivity on item tap — avoids
-     * passing a Context separately.
+     * defined as an inner class of MainActivity so it can reference MainActivity.this
+     * to start RoomActivity upon item tap, which avoids passing a Context separately
+     *
      */
+
     private class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.RoomViewHolder> {
 
         private List<Room> rooms;
@@ -344,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
             this.rooms = rooms;
         }
 
-        /** Replaces the current list and refreshes the RecyclerView. */
+        // replaces current list and refreshes RecyclerView //
         void setRooms(List<Room> newRooms) {
             this.rooms = newRooms;
             notifyDataSetChanged();
@@ -370,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(MainActivity.this, RoomActivity.class);
-                intent.putExtra(RoomActivity.EXTRA_ROOM_ID,   room.getRoomId());
+                intent.putExtra(RoomActivity.EXTRA_ROOM_ID, room.getRoomId());
                 intent.putExtra(RoomActivity.EXTRA_ROOM_NAME, room.getRoomName());
                 startActivity(intent);
             });
@@ -388,9 +350,9 @@ public class MainActivity extends AppCompatActivity {
 
             RoomViewHolder(View itemView) {
                 super(itemView);
-                textRoomName    = itemView.findViewById(R.id.textRoomName);
+                textRoomName = itemView.findViewById(R.id.textRoomName);
                 textMemberCount = itemView.findViewById(R.id.textMemberCount);
-                textInviteCode  = itemView.findViewById(R.id.textInviteCode);
+                textInviteCode = itemView.findViewById(R.id.textInviteCode);
             }
         }
     }

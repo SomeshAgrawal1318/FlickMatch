@@ -13,118 +13,109 @@ import retrofit2.Response;
  * High-level helper that translates Room filter settings into TMDB API calls
  * and returns processed movie lists via callbacks.
  *
- * <p><b>Responsibilities:</b>
- * <ol>
- *   <li>Convert genre names (stored in Room) to TMDB integer IDs.</li>
- *   <li>Build date-range and certification parameters from Room filters.</li>
- *   <li>Call the TMDB discover endpoint via {@link RetrofitClient}.</li>
- *   <li>Return results (and total page count) to the caller's callback.</li>
- * </ol>
+ * Responsibilities:
+ * 1. Convert genre names (stored in Room) to TMDB integer IDs
+ * 2. Build date-range and certification parameters from Room filters
+ * 3. Call the TMDB discover endpoint via {@link RetrofitClient}
+ * 4. Return results (and total page count) to the caller's callback
  *
- * <p><b>Design:</b> Not a singleton — TMDBHelper holds no mutable state. Create
- * instances with {@code new TMDBHelper()} wherever needed.  All network calls
- * are asynchronous ({@code enqueue}), so callbacks arrive on the main thread.
+ * Design:
+ * Not a singleton - TMDBHelper holds no mutable state. Create instances with
+ * new TMDBHelper() wherever needed.  All network calls are asynchronous (enqueue),
+ * so callbacks arrive on the main thread.
  */
+
 public class TMDBHelper {
 
-    // -------------------------------------------------------------------------
-    // Genre name → TMDB ID lookup
-    // -------------------------------------------------------------------------
+    // Genre name -> TMDB ID lookup //
 
     /**
      * Maps the genre names stored in Room (and shown in CreateRoomActivity) to
-     * the integer IDs that the TMDB API expects in the {@code with_genres} query
-     * parameter. Source: https://api.themoviedb.org/3/genre/movie/list
+     * the integer IDs that the TMDB API expects in the with_genres query parameter.
+     * Source: https://api.themoviedb.org/3/genre/movie/list
      */
     private static final Map<String, Integer> GENRE_MAP = new HashMap<>();
     static {
-        GENRE_MAP.put("Action",          28);
-        GENRE_MAP.put("Adventure",       12);
-        GENRE_MAP.put("Animation",       16);
-        GENRE_MAP.put("Comedy",          35);
-        GENRE_MAP.put("Crime",           80);
-        GENRE_MAP.put("Documentary",     99);
-        GENRE_MAP.put("Drama",           18);
-        GENRE_MAP.put("Family",       10751);
-        GENRE_MAP.put("Fantasy",         14);
-        GENRE_MAP.put("History",         36);
-        GENRE_MAP.put("Horror",          27);
-        GENRE_MAP.put("Music",        10402);
-        GENRE_MAP.put("Mystery",       9648);
-        GENRE_MAP.put("Romance",      10749);
+        GENRE_MAP.put("Action", 28);
+        GENRE_MAP.put("Adventure", 12);
+        GENRE_MAP.put("Animation",  16);
+        GENRE_MAP.put("Comedy", 35);
+        GENRE_MAP.put("Crime", 80);
+        GENRE_MAP.put("Documentary", 99);
+        GENRE_MAP.put("Drama", 18);
+        GENRE_MAP.put("Family", 10751);
+        GENRE_MAP.put("Fantasy", 14);
+        GENRE_MAP.put("History", 36);
+        GENRE_MAP.put("Horror", 27);
+        GENRE_MAP.put("Music", 10402);
+        GENRE_MAP.put("Mystery", 9648);
+        GENRE_MAP.put("Romance", 10749);
         GENRE_MAP.put("Science Fiction", 878);
-        GENRE_MAP.put("Thriller",        53);
-        GENRE_MAP.put("War",          10752);
-        GENRE_MAP.put("Western",         37);
+        GENRE_MAP.put("Thriller", 53);
+        GENRE_MAP.put("War", 10752);
+        GENRE_MAP.put("Western", 37);
     }
 
     /**
-     * Certification order used to find the highest (most permissive) rating
-     * selected by the user. TMDB's {@code certification.lte} parameter means
-     * "include this rating and everything below it".
-     * Order: G(1) < PG(2) < PG-13(3) < R(4).
+     * Ratings are ordered from most restrictive to most permissive. When the user
+     * picks a rating, TMDB's certification.lte filter includes that rating and
+     * everything below it; so picking R would include R, PG-13, PG, and G in the
+     * following order: G(1) < PG(2) < PG-13(3) < R(4).
      */
     private static final Map<String, Integer> CERT_ORDER = new HashMap<>();
     static {
-        CERT_ORDER.put("G",     1);
-        CERT_ORDER.put("PG",    2);
+        CERT_ORDER.put("G", 1);
+        CERT_ORDER.put("PG", 2);
         CERT_ORDER.put("PG-13", 3);
-        CERT_ORDER.put("R",     4);
+        CERT_ORDER.put("R", 4);
     }
 
-    // -------------------------------------------------------------------------
-    // Callbacks
-    // -------------------------------------------------------------------------
+    // Callbacks //
 
     /**
      * Callback for a page of movies fetched from the discover endpoint.
-     * {@code totalPages} lets the caller know whether more pages exist.
+     * totalPages lets the caller know whether more pages exist.
      */
     public interface MovieListCallback {
         void onSuccess(List<Movie> movies, int totalPages);
         void onFailure(String error);
     }
 
-    /**
-     * Callback for a single full movie detail fetch (includes runtime).
-     */
+    // callback for a single full movie detail fetch (includes runtime) //
     public interface DetailCallback {
         void onSuccess(Movie movie);
         void onFailure(String error);
     }
 
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
+    // Public API //
 
     /**
      * Fetches one page of movies matching the room's filter configuration.
      *
-     * <p>Steps:
-     * <ol>
-     *   <li>Converts room genre names → comma-separated TMDB IDs.</li>
-     *   <li>Builds ISO-8601 date strings from yearMin/yearMax.</li>
-     *   <li>Determines the most permissive certification the room allows.</li>
-     *   <li>Calls TMDB {@code /discover/movie} asynchronously.</li>
-     *   <li>Returns the raw result list and total page count via callback.</li>
-     * </ol>
+     * Steps:
+     * 1. Converts room genre names → comma-separated TMDB IDs
+     * 2. Builds ISO-8601 date strings from yearMin/yearMax
+     * 3. Determines the most permissive certification the room allows
+     * 4. Calls TMDB {@code /discover/movie} asynchronously
+     * 5. Returns the raw result list and total page count via callback
      *
-     * @param room     the Room whose filter fields drive the query
-     * @param page     1-based TMDB page number
-     * @param callback receives the movie list on success, or an error message
+     * params:
+     * room - the Room whose filter fields drive the query
+     * page - 1-based TMDB page number
+     * callback - receives the movie list on success, or an error message
      */
     public void fetchMoviesForRoom(Room room, int page, MovieListCallback callback) {
-        // Step 1 — genre names → "28,35,27"
+        // genre names -> "28,35,27"
         String genreIds = convertGenreNamesToIds(room.getGenres());
 
-        // Step 2 — date range strings from year ints
+        // date range strings from year ints
         String releaseDateGte = room.getYearMin() + "-01-01";
         String releaseDateLte = room.getYearMax() + "-12-31";
 
-        // Step 3 — highest rating selected becomes the certification.lte cap
+        // highest rating selected becomes the certification.lte cap
         String certLte = getMaxCertification(room.getAgeRatings());
 
-        // Step 4 — fire the network call
+        // fire the network call
         Call<DiscoverResponse> call = RetrofitClient.getService().discoverMovies(
                 Constants.TMDB_API_KEY,
                 genreIds,
@@ -132,7 +123,7 @@ public class TMDBHelper {
                 releaseDateLte,
                 "popularity.desc",
                 page,
-                50,     // minimum vote count — filters out obscure/unrated titles
+                50, // minimum vote count - filters out obscure/unrated titles
                 "en",
                 "US",
                 certLte
@@ -148,8 +139,8 @@ public class TMDBHelper {
                 }
 
                 DiscoverResponse body   = response.body();
-                List<Movie>      movies = body.getResults();
-                int              pages  = body.getTotalPages();
+                List<Movie> movies = body.getResults();
+                int pages  = body.getTotalPages();
 
                 if (movies == null) {
                     movies = new ArrayList<>();
@@ -168,12 +159,13 @@ public class TMDBHelper {
     /**
      * Fetches full details for a single movie by its TMDB integer ID.
      *
-     * <p>The {@code /discover/movie} endpoint omits the {@code runtime} field.
-     * Call this when you need the runtime of a specific movie (e.g. when
-     * displaying the detail card or filtering after discovery).
+     * The /discover/movie endpoint omits the runtime field. This is called when
+     * the runtime of a specific movie is needed (e.g. when displaying the detail
+     * card or filtering after discovery).
      *
-     * @param movieId  TMDB integer movie ID
-     * @param callback receives the fully populated {@link Movie} on success
+     * params:
+     * movieId - TMDB integer movie ID
+     * callback - receives the fully populated Movie on success
      */
     public void fetchMovieDetails(int movieId, DetailCallback callback) {
         Call<Movie> call = RetrofitClient.getService()
@@ -196,22 +188,21 @@ public class TMDBHelper {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
+    // Helpers //
 
     /**
      * Converts a list of genre name strings (as stored in Room) to a
      * comma-separated string of TMDB integer IDs.
      *
-     * <p>Example: {@code ["Action", "Comedy", "Horror"] → "28,35,27"}
+     * e.g. ["Action", "Comedy", "Horror"] -> "28,35,27"
      *
-     * <p>Genre names that don't appear in {@link #GENRE_MAP} are silently
-     * skipped — this is safe because the genre list is always populated from
-     * the fixed set in CreateRoomActivity.
+     * Genre names that don't appear in .GENRE_MAP are silently skipped - this is safe
+     * because the genre list is always populated from the fixed set in CreateRoomActivity.
      *
-     * @param genreNames list of human-readable genre names
-     * @return comma-separated TMDB genre IDs, or an empty string if none match
+     * params:
+     * genreNames - list of human-readable genre names
+     *
+     * this returns comma-separated TMDB genre IDs, or an empty string if none match
      */
     public String convertGenreNamesToIds(List<String> genreNames) {
         if (genreNames == null || genreNames.isEmpty()) return "";
@@ -231,15 +222,17 @@ public class TMDBHelper {
      * Returns the highest (most permissive) certification from the user's
      * selected age rating list.
      *
-     * <p>TMDB's {@code certification.lte} parameter includes all movies rated
-     * at or below the given level. So if the user selected [G, PG-13], we
-     * pass "PG-13" to get G, PG, and PG-13 films — not just PG-13.
+     * TMDB's certification.lte parameter includes all movies rated at or below
+     * the given level. So if the user selected [G, PG-13], we pass "PG-13" to
+     * get G, PG, and PG-13 films, not just PG-13.
      *
-     * <p>Defaults to "R" if the list is empty or no known ratings are found,
+     * This defaults to "R" if the list is empty or no known ratings are found,
      * so the call doesn't unintentionally exclude everything.
      *
-     * @param ageRatings list of selected certification strings, e.g. ["G", "PG-13"]
-     * @return the highest certification string, e.g. "PG-13"
+     * params:
+     * ageRatings - list of selected certification strings, e.g. ["G", "PG-13"]
+     *
+     * This returns the highest certification string, e.g. "PG-13"
      */
     private String getMaxCertification(List<String> ageRatings) {
         if (ageRatings == null || ageRatings.isEmpty()) return "R";
