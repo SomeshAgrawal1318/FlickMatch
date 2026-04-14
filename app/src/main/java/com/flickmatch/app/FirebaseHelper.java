@@ -226,9 +226,12 @@ public class FirebaseHelper {
             ref.set(room.toMap())
                     .addOnSuccessListener(unused -> {
                         // Add roomId to the creator's roomIds list.
+                        Map<String, Object> userUpdate = new HashMap<>();
+                        userUpdate.put("roomIds", FieldValue.arrayUnion(roomId));
+
                         db.collection(Constants.COLLECTION_USERS)
                                 .document(room.getCreatorUid())
-                                .update("roomIds", FieldValue.arrayUnion(roomId))
+                                .set(userUpdate, SetOptions.merge())
                                 .addOnSuccessListener(u -> callback.onSuccess(room))
                                 .addOnFailureListener(e -> callback.onFailure(
                                         "Room created but failed to update user: " + e.getMessage()));
