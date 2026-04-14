@@ -333,7 +333,7 @@ public class RoomActivity extends AppCompatActivity {
 
         // reset all tabs to inactive style //
         for (TextView tab : new TextView[]{tabLobby, tabSwipe, tabWatchlist}) {
-            tab.setTextColor(0xFF666666);
+            tab.setTextColor(0xFF717171);
             tab.setTypeface(null, android.graphics.Typeface.NORMAL);
             tab.setBackgroundResource(R.drawable.bg_tab_inactive);
         }
@@ -406,7 +406,7 @@ public class RoomActivity extends AppCompatActivity {
             row.setPadding(0, 8, 0, 8);
 
             TextView nameView = new TextView(this);
-            nameView.setTextSize(15f);
+            nameView.setTextSize(13f);
             nameView.setTextColor(0xFFE8E8E8);
             nameView.setText("Loading…");
             row.addView(nameView);
@@ -414,7 +414,7 @@ public class RoomActivity extends AppCompatActivity {
             if (uid.equals(room.getCreatorUid())) {
                 TextView badge = new TextView(this);
                 badge.setText("  (creator)");
-                badge.setTextSize(12f);
+                badge.setTextSize(11f);
                 badge.setTextColor(0xFF717171);
                 row.addView(badge);
             }
@@ -763,7 +763,7 @@ public class RoomActivity extends AppCompatActivity {
         // update button highlight - active = red fill, inactive = grey
         for (TextView btn : new TextView[]{sortMatchOrder, sortRating, sortPopularity}) {
             btn.setBackgroundResource(R.drawable.bg_sort_inactive);
-            btn.setTextColor(0xFF777777);
+            btn.setTextColor(0xFF717171);
         }
         selectedButton.setBackgroundResource(R.drawable.bg_sort_active);
         selectedButton.setTextColor(0xFFFFFFFF);
