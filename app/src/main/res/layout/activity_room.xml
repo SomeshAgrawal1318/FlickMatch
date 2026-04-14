@@ -24,7 +24,7 @@
             android:background="@drawable/bg_tab_active"
             android:gravity="center"
             android:text="Lobby"
-            android:textColor="#FFFFFF"
+            android:textColor="#E8E8E8"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -75,7 +75,7 @@
                     android:id="@+id/textRoomTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#F5F5F5"
+                    android:textColor="#E8E8E8"
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
@@ -126,7 +126,7 @@
                             android:paddingStart="18dp"
                             android:paddingEnd="18dp"
                             android:text="Copy"
-                            android:textColor="#FFFFFF"
+                            android:textColor="#E8E8E8"
                             android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -173,7 +173,7 @@
                     android:layout_marginTop="24dp"
                     android:background="@drawable/bg_button_primary"
                     android:text="Start Swiping"
-                    android:textColor="#FFFFFF"
+                    android:textColor="#E8E8E8"
                     android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -223,7 +223,7 @@
                         android:id="@+id/textMovieTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="#F5F5F5"
+                        android:textColor="#E8E8E8"
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:shadowColor="#AA000000"

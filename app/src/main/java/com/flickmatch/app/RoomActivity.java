@@ -339,7 +339,7 @@ public class RoomActivity extends AppCompatActivity {
 
         // highlight the active tab with red pill background //
         TextView active = index == 0 ? tabLobby : index == 1 ? tabSwipe : tabWatchlist;
-        active.setTextColor(0xFFFFFFFF);
+        active.setTextColor(0xFFE8E8E8);
         active.setTypeface(null, android.graphics.Typeface.BOLD);
         active.setBackgroundResource(R.drawable.bg_tab_active);
 
@@ -406,7 +406,7 @@ public class RoomActivity extends AppCompatActivity {
 
             TextView nameView = new TextView(this);
             nameView.setTextSize(15f);
-            nameView.setTextColor(0xFF1A1A1A);
+            nameView.setTextColor(0xFFE8E8E8);
             nameView.setText("Loading…");
             row.addView(nameView);
 
@@ -414,7 +414,7 @@ public class RoomActivity extends AppCompatActivity {
                 TextView badge = new TextView(this);
                 badge.setText("  (creator)");
                 badge.setTextSize(12f);
-                badge.setTextColor(0xFF888888);
+                badge.setTextColor(0xFF717171);
                 row.addView(badge);
             }
 
