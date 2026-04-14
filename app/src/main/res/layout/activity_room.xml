@@ -361,8 +361,7 @@
                     android:paddingEnd="14dp"
                     android:text="Match Order"
                     android:textColor="#E8E8E8"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/sortRating"
